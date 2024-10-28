@@ -1,4 +1,5 @@
 import 'package:example/src/pages/home/home_page.dart';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -25,4 +26,5 @@ class Routes {
     this.route,
   );
   static Routes home = Routes('/');
+  static Routes vendaDigitada = Routes('/venda_digitada');
 }

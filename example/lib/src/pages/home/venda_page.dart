@@ -1,14 +1,15 @@
 import 'package:example/src/compontens/c_text_form_field.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:agente_clisitef/agente_clisitef.dart';
 
 class VendaPage extends StatefulWidget {
   final SharedPreferences preferences;
+  final TabController tabController;
   const VendaPage({
     super.key,
     required this.preferences,
+    required this.tabController,
   });
 
   @override
@@ -118,7 +119,8 @@ class _VendaPageState extends State<VendaPage> {
             FilledButton(
                 onPressed: () {
                   AgenteClisitef.initialize(config);
-                  AgenteClisitef.instance.startTransaction(PaymentMethod.credito, amount);
+                  AgenteClisitef.pdvDigitado.startTransaction(paymentMethod: PaymentMethod.credito, amount: amount);
+                  widget.tabController.animateTo(1);
                 },
                 child: const Text('INICIAR VENDA')),
             const SizedBox(height: 12),

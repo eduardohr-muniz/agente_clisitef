@@ -136,7 +136,7 @@ class CliSiTefResp {
     this.ultimosQuatroDigitosCartao = '',
     this.nsuHostAutorizadorTransacaoCancelada = '',
     this.codigoPSP = '',
-    this.codResult = const {},
+    required this.codResult,
   });
 
   CliSiTefResp onFildid({required int fieldId, required String buffer}) {

@@ -1,4 +1,5 @@
 import 'package:example/src/pages/home/venda_page.dart';
+import 'package:example/src/pages/venda_digitada_page.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -10,28 +11,45 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
+class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
+  late TabController tabController;
+
+  @override
+  void initState() {
+    tabController = TabController(length: 2, vsync: this);
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 1,
+      length: 2,
       initialIndex: 0,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Example Agente Clisitef'),
-          bottom: const TabBar(
-            tabs: [
+          bottom: TabBar(
+            controller: tabController,
+            tabs: const [
               Tab(
-                child: Text('Venda'),
+                child: Text('Configuraçoes'),
+              ),
+              Tab(
+                child: Text('Venda digitada'),
               )
             ],
           ),
         ),
-        body: TabBarView(children: [
-          VendaPage(
-            preferences: widget.preferences,
-          )
-        ]),
+        body: TabBarView(
+          controller: tabController,
+          children: [
+            VendaPage(
+              preferences: widget.preferences,
+              tabController: tabController,
+            ),
+            VendaDigitadaPage(tabController: tabController)
+          ],
+        ),
       ),
     );
   }

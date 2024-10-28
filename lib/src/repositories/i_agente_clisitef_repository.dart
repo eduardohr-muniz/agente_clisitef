@@ -5,10 +5,14 @@ import 'package:agente_clisitef/src/repositories/responses/continue_transaction_
 import 'package:agente_clisitef/src/repositories/responses/session_response.dart';
 
 abstract class IAgenteClisitefRepository {
-  Future<StartTransactionResponse> startTransaction(PaymentMethod paymentMethod, double amount);
-  Future<ContinueTransactionResponse> continueTransaction(String sessionId, String data, int continueCode);
+  Future<StartTransactionResponse> startTransaction({required PaymentMethod paymentMethod, required double amount});
+  Future<ContinueTransactionResponse> continueTransaction({required String sessionId, required int continueCode, String? data});
   Future<FinishTransactionResponse> finishTransaction(
-      String sessionId, String taxInvoiceNumber, String taxInvoiceDate, String taxInvoiceTime, bool confirm);
+      {required String sessionId,
+      required String taxInvoiceNumber,
+      required String taxInvoiceDate,
+      required String taxInvoiceTime,
+      required int confirm});
   Future<SessionResponse> createSession();
   Future<SessionResponse> getSession();
   Future<void> discardSession();

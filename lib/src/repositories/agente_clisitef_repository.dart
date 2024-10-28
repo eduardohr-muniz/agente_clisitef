@@ -1,6 +1,4 @@
 import 'package:agente_clisitef/agente_clisitef.dart';
-import 'package:agente_clisitef/src/enums/function_id.dart';
-import 'package:agente_clisitef/src/models/agente_clisitef_config.dart';
 import 'package:agente_clisitef/src/repositories/i_agente_clisitef_repository.dart';
 import 'package:agente_clisitef/src/repositories/responses/finish_trasaction_response.dart';
 import 'package:agente_clisitef/src/repositories/responses/start_transaction_response.dart';
@@ -16,7 +14,7 @@ class AgenteClisitefRepository implements IAgenteClisitefRepository {
   AgenteClisitefConfig get config => AgenteClisitef.config;
 
   @override
-  Future<StartTransactionResponse> startTransaction(PaymentMethod paymentMethod, double amount) async {
+  Future<StartTransactionResponse> startTransaction({required PaymentMethod paymentMethod, required double amount}) async {
     Map<String, dynamic> data = {
       'trnAmount': amount.toStringAsFixed(2),
       'functionId': paymentMethod.value,
@@ -32,7 +30,7 @@ class AgenteClisitefRepository implements IAgenteClisitefRepository {
   }
 
   @override
-  Future<ContinueTransactionResponse> continueTransaction(String sessionId, String data, int continueCode) async {
+  Future<ContinueTransactionResponse> continueTransaction({required String sessionId, required int continueCode, String? data}) async {
     Map<String, dynamic> params = {
       'sessionId': sessionId,
       'data': data,
@@ -49,13 +47,17 @@ class AgenteClisitefRepository implements IAgenteClisitefRepository {
 
   @override
   Future<FinishTransactionResponse> finishTransaction(
-      String sessionId, String taxInvoiceNumber, String taxInvoiceDate, String taxInvoiceTime, bool confirm) async {
+      {required String sessionId,
+      required String taxInvoiceNumber,
+      required String taxInvoiceDate,
+      required String taxInvoiceTime,
+      required int confirm}) async {
     Map<String, dynamic> data = {
       'sessionId': sessionId,
       'taxInvoiceNumber': taxInvoiceNumber,
       'taxInvoiceDate': taxInvoiceDate,
       'taxInvoiceTime': taxInvoiceTime,
-      'confirm': confirm ? 1 : 0,
+      'confirm': confirm,
     };
 
     final request = await client.post(
