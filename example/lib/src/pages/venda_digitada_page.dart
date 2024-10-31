@@ -53,11 +53,20 @@ class _VendaDigitadaPageState extends State<VendaDigitadaPage> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               const Text('Confirmar transacao?'),
-                              FilledButton(
-                                  onPressed: () {
-                                    AgenteClisitef.pdvDigitado.continueTransaction(continueCode: 0);
-                                  },
-                                  child: const Text('ok'))
+                              Row(
+                                children: [
+                                  FilledButton(
+                                      onPressed: () {
+                                        AgenteClisitef.pdvDigitado.continueTransaction(continueCode: -1);
+                                      },
+                                      child: const Text('cancelar')),
+                                  FilledButton(
+                                      onPressed: () {
+                                        AgenteClisitef.pdvDigitado.continueTransaction(continueCode: 0);
+                                      },
+                                      child: const Text('ok')),
+                                ],
+                              )
                             ],
                           ),
                         Text(
