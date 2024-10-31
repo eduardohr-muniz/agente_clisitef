@@ -8,6 +8,8 @@ import 'package:agente_clisitef/src/services/pdv_digitado_service.dart';
 import 'package:dio/dio.dart';
 export './src/enums/function_id.dart';
 export './src/models/agente_clisitef_config.dart';
+export './src/models/data_events.dart';
+export './src/models/comand_events.dart';
 
 AgenteClisitefConfig? _agenteClisitefConfig;
 IClient? _clisitefClient;

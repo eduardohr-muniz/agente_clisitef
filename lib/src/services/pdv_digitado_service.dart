@@ -1,3 +1,5 @@
+import 'package:agente_clisitef/src/models/comand_events.dart';
+import 'package:agente_clisitef/src/models/data_events.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'package:agente_clisitef/agente_clisitef.dart';
@@ -19,13 +21,20 @@ class PdvDigitadoService {
   continueTransaction({String? data, required int continueCode}) async {
     final response = await agenteClisitefRepository.continueTransaction(
         sessionId: transaction.value.startTransactionResponse!.sessionId, data: data?.toString() ?? '', continueCode: continueCode);
-    transaction.value =
-        transaction.value.copyWith(cliSiTefResp: transaction.value.cliSiTefResp.onFildid(fieldId: response.fieldId, buffer: response.data ?? ''));
+    final event = DataEvents.fildIdToDataEvent[response.fieldId] ?? DataEvents.unknown;
+    final command = CommandEvents.fromCommandId(response.commandId);
+    transaction.value = transaction.value.copyWith(
+        cliSiTefResp: transaction.value.cliSiTefResp.onFildid(fieldId: response.fieldId, buffer: response.data ?? ''),
+        event: event,
+        command: command,
+        buufer: response.data ?? '',
+        fildId: response.fieldId);
     if (response.clisitefStatus == 0) {
       finishTransaction();
       return;
     }
-    if (response.fieldMaxLength > 0) {
+
+    if (response.fieldMaxLength > 0 || response.fieldId == 102 || response.fieldId == 123) {
       return;
     }
     continueTransaction(continueCode: continueCode);
