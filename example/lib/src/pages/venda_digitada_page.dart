@@ -58,6 +58,7 @@ class _VendaDigitadaPageState extends State<VendaDigitadaPage> {
                                   FilledButton(
                                       onPressed: () {
                                         AgenteClisitef.pdvDigitado.continueTransaction(continueCode: -1);
+                                        widget.tabController.animateTo(0);
                                       },
                                       child: const Text('cancelar')),
                                   FilledButton(

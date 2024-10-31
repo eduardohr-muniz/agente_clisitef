@@ -33,6 +33,7 @@ class PdvDigitadoService {
       finishTransaction();
       return;
     }
+    if (continueCode != 0) return;
 
     if (response.fieldMaxLength > 0 || response.fieldId == 102 || response.fieldId == 123) {
       return;
