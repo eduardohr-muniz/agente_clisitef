@@ -42,6 +42,8 @@ class PdvDigitadoService {
   }
 
   Future startTransaction({required PaymentMethod paymentMethod, required double amount}) async {
+    transaction.value = Transaction(cliSiTefResp: CliSiTefResp(codResult: {}));
+
     final startTransactionResponse = await agenteClisitefRepository.startTransaction(paymentMethod: paymentMethod, amount: amount);
     transaction.value = transaction.value.copyWith(startTransactionResponse: startTransactionResponse);
     continueTransaction(continueCode: 0);
