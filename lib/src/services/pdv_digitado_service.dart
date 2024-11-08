@@ -1,9 +1,5 @@
-import 'package:agente_clisitef/src/models/comand_events.dart';
-import 'package:agente_clisitef/src/models/data_events.dart';
 import 'package:flutter/cupertino.dart';
-
 import 'package:agente_clisitef/agente_clisitef.dart';
-import 'package:agente_clisitef/src/enums/function_id.dart';
 import 'package:agente_clisitef/src/models/clisitef_resp.dart';
 import 'package:agente_clisitef/src/models/transaction.dart';
 import 'package:agente_clisitef/src/repositories/i_agente_clisitef_repository.dart';
@@ -12,10 +8,8 @@ class PdvDigitadoService {
   final IAgenteClisitefRepository agenteClisitefRepository;
   final AgenteClisitefConfig config;
 
-  PdvDigitadoService({
-    required this.agenteClisitefRepository,
-    required this.config,
-  });
+  PdvDigitadoService({required this.agenteClisitefRepository, required this.config});
+
   ValueNotifier<Transaction> transaction = ValueNotifier(Transaction(cliSiTefResp: CliSiTefResp(codResult: {})));
 
   continueTransaction({String? data, required int continueCode}) async {
@@ -24,11 +18,12 @@ class PdvDigitadoService {
     final event = DataEvents.fildIdToDataEvent[response.fieldId] ?? DataEvents.unknown;
     final command = CommandEvents.fromCommandId(response.commandId);
     transaction.value = transaction.value.copyWith(
-        cliSiTefResp: transaction.value.cliSiTefResp.onFildid(fieldId: response.fieldId, buffer: response.data ?? ''),
-        event: event,
-        command: command,
-        buufer: response.data ?? '',
-        fildId: response.fieldId);
+      cliSiTefResp: transaction.value.cliSiTefResp.onFildid(fieldId: response.fieldId, buffer: response.data ?? ''),
+      event: event,
+      command: command,
+      buufer: response.data ?? '',
+      fildId: response.fieldId,
+    );
     if (response.clisitefStatus == 0) {
       finishTransaction();
       return;
