@@ -6,11 +6,11 @@ import 'package:agente_clisitef/src/models/transaction.dart';
 import 'package:agente_clisitef/src/repositories/i_agente_clisitef_repository.dart';
 import 'dart:async';
 
-class PdvDigitadoService {
+class PdvPinpadService {
   final IAgenteClisitefRepository agenteClisitefRepository;
   final AgenteClisitefConfig config;
 
-  PdvDigitadoService({required this.agenteClisitefRepository, required this.config});
+  PdvPinpadService({required this.agenteClisitefRepository, required this.config});
 
   final _transactionStreamController = StreamController<Transaction>.broadcast();
   Stream<Transaction> get transactionStream => _transactionStreamController.stream;
