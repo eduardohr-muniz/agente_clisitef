@@ -22,12 +22,12 @@ class PdvPinpadService {
     final response = await agenteClisitefRepository.continueTransaction(
         sessionId: _currentTransaction.startTransactionResponse!.sessionId, data: data?.toString() ?? '', continueCode: continueCode);
     _updateTransaction(response: response);
-    if (response.clisitefStatus == 0) {
-      finishTransaction();
+    if (response.commandId == 21) {
+      await continueTransaction(continueCode: continueCode, data: '1');
       return;
     }
     if (continueCode != 0) return;
-    if (response.fieldMaxLength > 0 || response.fieldId == 102 || response.fieldId == 123) {
+    if (response.fieldMaxLength > 0) {
       return;
     }
     await continueTransaction(continueCode: continueCode);
