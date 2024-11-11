@@ -1,5 +1,6 @@
 import 'package:example/src/pages/home/venda_page.dart';
-import 'package:example/src/pages/venda_digitada_page.dart';
+import 'package:example/src/pages/home/venda_digitada_page.dart';
+import 'package:example/src/pages/home/venda_tef_page.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -16,7 +17,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
   @override
   void initState() {
-    tabController = TabController(length: 2, vsync: this);
+    tabController = TabController(length: 3, vsync: this);
     super.initState();
   }
 
@@ -36,6 +37,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               ),
               Tab(
                 child: Text('Venda digitada'),
+              ),
+              Tab(
+                child: Text('Venda pinpad'),
               )
             ],
           ),
@@ -47,7 +51,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               preferences: widget.preferences,
               tabController: tabController,
             ),
-            VendaDigitadaPage(tabController: tabController)
+            VendaDigitadaPage(tabController: tabController),
+            VendaPinpadPage(tabController: tabController)
           ],
         ),
       ),

@@ -122,9 +122,17 @@ class _VendaPageState extends State<VendaPage> {
                   AgenteClisitef.pdvDigitado.startTransaction(paymentMethod: PaymentMethod.credito, amount: amount);
                   widget.tabController.animateTo(1);
                 },
-                child: const Text('INICIAR VENDA')),
+                child: const Text('INICIAR VENDA DIGITADA')),
             const SizedBox(height: 12),
-            FilledButton(onPressed: () {}, child: const Text('FINALIZAR ESTORNANDO')),
+            FilledButton(
+                onPressed: () {
+                  AgenteClisitef.initialize(config);
+                  AgenteClisitef.pdvPinpad.startTransaction(paymentMethod: PaymentMethod.credito, amount: amount);
+                  widget.tabController.animateTo(2);
+                },
+                child: const Text('INICIAR VENDA PINPAD')),
+            const SizedBox(height: 12),
+            // FilledButton(onPressed: () {}, child: const Text('FINALIZAR ESTORNANDO')),
           ],
         ),
       ),
