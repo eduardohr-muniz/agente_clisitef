@@ -71,7 +71,7 @@ class _VendaDigitadaPageState extends State<VendaDigitadaPage> {
                             ],
                           ),
                         Text(
-                            "Comando: ${transaction.command.toString()}  \n\nevent: ${transaction.event.toString()} \n\nBuffer: ${transaction.buufer}"
+                            "Comando: ${transaction.command.toString()}  \n\nevent: ${transaction.event.toString()} \n\nBuffer: ${transaction.buffer}"
                                 .toUpperCase()),
                         Text(transaction.cliSiTefResp.codResult.toString().replaceAll(',', ',\n').replaceAll('}', '\n}').replaceAll('{', '{\n'))
                       ],
@@ -86,7 +86,7 @@ class _VendaDigitadaPageState extends State<VendaDigitadaPage> {
                       builder: (context, transaction, _) {
                         return Text(
                           (transaction.event == DataEvents.messageCashier || transaction.command == CommandEvents.getField)
-                              ? transaction.buufer.toUpperCase()
+                              ? transaction.buffer.toUpperCase()
                               : '',
                           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                         );

@@ -11,6 +11,9 @@ export './src/enums/function_id.dart';
 export './src/models/agente_clisitef_config.dart';
 export './src/models/data_events.dart';
 export './src/models/comand_events.dart';
+export './src/services/pdv_pinpad_service.dart';
+export './src/models/transaction.dart';
+export './src/models/payment_status.dart';
 
 AgenteClisitefConfig? _agenteClisitefConfig;
 IClient? _clisitefClient;

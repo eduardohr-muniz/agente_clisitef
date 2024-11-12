@@ -1,8 +1,8 @@
+import 'package:agente_clisitef/src/models/payment_status.dart';
 import 'package:agente_clisitef/src/repositories/responses/continue_transaction_response.dart';
 import 'package:agente_clisitef/src/repositories/responses/start_transaction_response.dart';
 import 'package:agente_clisitef/agente_clisitef.dart';
 import 'package:agente_clisitef/src/models/clisitef_resp.dart';
-import 'package:agente_clisitef/src/models/transaction.dart';
 import 'package:agente_clisitef/src/repositories/i_agente_clisitef_repository.dart';
 import 'dart:async';
 
@@ -13,10 +13,16 @@ class PdvPinpadService {
   PdvPinpadService({required this.agenteClisitefRepository, required this.config});
 
   final _transactionStreamController = StreamController<Transaction>.broadcast();
+  final _paymentStatusStreamController = StreamController<PaymentStatus>.broadcast();
+  Stream<PaymentStatus> get paymentStatusStream => _paymentStatusStreamController.stream;
   Stream<Transaction> get transactionStream => _transactionStreamController.stream;
   Transaction _currentTransaction = Transaction(cliSiTefResp: CliSiTefResp(codResult: {}));
-
   Transaction get currentTransaction => _currentTransaction;
+
+  _updatePaymentStatus(PaymentStatus status) {
+    _currentTransaction = _currentTransaction.copyWith(paymentStatus: status);
+    _paymentStatusStreamController.add(status);
+  }
 
   Future<void> continueTransaction({String? data, required int continueCode}) async {
     final response = await agenteClisitefRepository.continueTransaction(
@@ -27,6 +33,10 @@ class PdvPinpadService {
       return;
     }
     if (continueCode != 0) return;
+    if (continueCode == 0) {
+      _updatePaymentStatus(PaymentStatus.sucess);
+      _updateTransaction();
+    }
     if (response.fieldMaxLength > 0) {
       return;
     }
@@ -34,7 +44,8 @@ class PdvPinpadService {
   }
 
   Future<void> startTransaction({required PaymentMethod paymentMethod, required double amount}) async {
-    _currentTransaction = Transaction(cliSiTefResp: CliSiTefResp(codResult: {}));
+    _currentTransaction = Transaction.empty();
+    _updatePaymentStatus(PaymentStatus.unknow);
     _transactionStreamController.add(_currentTransaction);
     final startTransactionResponse = await agenteClisitefRepository.startTransaction(
       paymentMethod: paymentMethod,
@@ -42,22 +53,26 @@ class PdvPinpadService {
     );
     _updateTransaction(startTransactionResponse: startTransactionResponse);
 
-    await continueTransaction(continueCode: 0);
+    continueTransaction(continueCode: 0);
   }
 
-  void finishTransaction() {
-    agenteClisitefRepository.finishTransaction(
+  Future<void> finishTransaction() async {
+    await agenteClisitefRepository.finishTransaction(
       sessionId: _currentTransaction.startTransactionResponse!.sessionId,
       taxInvoiceNumber: config.taxInvoiceNumber,
       taxInvoiceDate: config.taxInvoiceDate,
       taxInvoiceTime: config.taxInvoiceTime,
       confirm: 1,
     );
+    _updatePaymentStatus(PaymentStatus.done);
+    _updateTransaction();
   }
 
   void dispose() {
     _transactionStreamController.close();
   }
+
+  Future<void> cancelTransaction() async => await continueTransaction(continueCode: -1);
 
   void _updateTransaction({ContinueTransactionResponse? response, StartTransactionResponse? startTransactionResponse}) {
     if (response != null) {
@@ -70,7 +85,7 @@ class PdvPinpadService {
         ),
         event: event,
         command: command,
-        buufer: response.data ?? '',
+        buffer: response.data ?? '',
         fildId: response.fieldId,
       );
     }

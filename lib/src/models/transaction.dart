@@ -1,45 +1,45 @@
 import 'package:agente_clisitef/src/models/clisitef_resp.dart';
 import 'package:agente_clisitef/src/models/comand_events.dart';
 import 'package:agente_clisitef/src/models/data_events.dart';
+import 'package:agente_clisitef/src/models/payment_status.dart';
 import 'package:agente_clisitef/src/repositories/responses/start_transaction_response.dart';
 
 class Transaction {
   final StartTransactionResponse? startTransactionResponse;
-  final bool done;
-  final bool success;
+  final PaymentStatus paymentStatus;
   CliSiTefResp cliSiTefResp;
   final DataEvents? event;
-  final String buufer;
+  final String buffer;
   final CommandEvents command;
   final int fildId;
   Transaction({
     this.startTransactionResponse,
-    this.done = false,
-    this.success = false,
+    this.paymentStatus = PaymentStatus.unknow,
     required this.cliSiTefResp,
     this.event,
-    this.buufer = '',
+    this.buffer = '',
     this.command = CommandEvents.unknown,
     this.fildId = 0,
   });
+  factory Transaction.empty() {
+    return Transaction(cliSiTefResp: CliSiTefResp(codResult: {}), paymentStatus: PaymentStatus.unknow);
+  }
 
   Transaction copyWith({
     StartTransactionResponse? startTransactionResponse,
-    bool? done,
-    bool? success,
+    PaymentStatus? paymentStatus,
     CliSiTefResp? cliSiTefResp,
     DataEvents? event,
-    String? buufer,
+    String? buffer,
     CommandEvents? command,
     int? fildId,
   }) {
     return Transaction(
       startTransactionResponse: startTransactionResponse ?? this.startTransactionResponse,
-      done: done ?? this.done,
-      success: success ?? this.success,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
       cliSiTefResp: cliSiTefResp ?? this.cliSiTefResp,
       event: event ?? this.event,
-      buufer: buufer ?? this.buufer,
+      buffer: buffer ?? this.buffer,
       command: command ?? this.command,
       fildId: fildId ?? this.fildId,
     );
