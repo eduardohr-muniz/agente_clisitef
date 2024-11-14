@@ -32,13 +32,13 @@ class AgenteClisitefConfig {
   AgenteClisitefConfig({
     this.trnAdditionalParameters = '',
     this.trnInitParameters = '',
-    this.sitefIp = '',
-    this.storeId = '',
-    this.terminalId = '',
-    this.taxInvoiceNumber = '',
-    this.taxInvoiceDate = '',
-    this.taxInvoiceTime = '',
-    this.cashierOperator = '',
+    this.sitefIp = ' 127.0.0.1',
+    this.storeId = '00000000',
+    this.terminalId = 'REST0001',
+    this.taxInvoiceNumber = '1234',
+    this.taxInvoiceDate = '20180611',
+    this.taxInvoiceTime = '170000',
+    this.cashierOperator = 'CAIXA',
     this.agenteIp = 'https://127.0.0.1',
   });
 
