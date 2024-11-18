@@ -44,4 +44,9 @@ class Transaction {
       fildId: fildId ?? this.fildId,
     );
   }
+
+  @override
+  String toString() {
+    return 'Transaction(startTransactionResponse: $startTransactionResponse, paymentStatus: $paymentStatus, cliSiTefResp: $cliSiTefResp, event: $event, buffer: $buffer, command: $command, fildId: $fildId)';
+  }
 }

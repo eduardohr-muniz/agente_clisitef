@@ -29,6 +29,8 @@ class AgenteClisitefConfig {
 
   /// OPERADOR
   final String cashierOperator;
+
+  final bool enableLogs;
   AgenteClisitefConfig({
     this.trnAdditionalParameters = '',
     this.trnInitParameters = '',
@@ -40,6 +42,7 @@ class AgenteClisitefConfig {
     this.taxInvoiceTime = '170000',
     this.cashierOperator = 'CAIXA',
     this.agenteIp = 'https://127.0.0.1',
+    this.enableLogs = false,
   });
 
   Map<String, dynamic> toMap() {

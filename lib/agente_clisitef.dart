@@ -24,7 +24,7 @@ PdvPinpadService? _pdvPinpadService;
 class AgenteClisitef {
   static initialize(AgenteClisitefConfig config) {
     _agenteClisitefConfig = config;
-    _clisitefClient = ClientDio(baseOptions: BaseOptions(baseUrl: _agenteClisitefConfig!.agenteIp));
+    _clisitefClient = ClientDio(baseOptions: BaseOptions(baseUrl: _agenteClisitefConfig!.agenteIp), enableLogs: config.enableLogs);
     _agenteClisitefRepository = AgenteClisitefRepository(client: _clisitefClient!);
   }
 

@@ -29,4 +29,7 @@ class StartTransactionResponse {
   String toJson() => json.encode(toMap());
 
   factory StartTransactionResponse.fromJson(String source) => StartTransactionResponse.fromMap(json.decode(source));
+
+  @override
+  String toString() => 'StartTransactionResponse(sessionId: $sessionId, serviceStatus: $serviceStatus, clisitefStatus: $clisitefStatus)';
 }
