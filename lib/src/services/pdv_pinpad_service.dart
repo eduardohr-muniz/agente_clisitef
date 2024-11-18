@@ -38,7 +38,7 @@ class PdvPinpadService {
         return;
       }
     }
-
+    await Future.delayed(const Duration(milliseconds: 500));
     await continueTransaction(continueCode: continueCode);
   }
 
@@ -64,7 +64,6 @@ class PdvPinpadService {
       confirm: 1,
     );
     _updatePaymentStatus(PaymentStatus.done);
-    _updateTransaction();
   }
 
   void dispose() {
