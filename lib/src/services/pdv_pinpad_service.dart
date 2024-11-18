@@ -34,12 +34,9 @@ class PdvPinpadService {
         return;
       }
       if (continueCode != 0) return;
-      if (response.fieldId == 5005) {
+      if (response.fieldId == 0 && response.clisitefStatus == 0) {
         _updatePaymentStatus(PaymentStatus.sucess);
         _updateTransaction();
-      }
-      if (response.fieldMaxLength > 0) {
-        return;
       }
     }
 
