@@ -42,6 +42,7 @@ class AgenteClisitefRepository implements IAgenteClisitefRepository {
       data: params,
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
     );
+    if (request.data == null) return null;
     return ContinueTransactionResponse.fromMap(request.data);
   }
 

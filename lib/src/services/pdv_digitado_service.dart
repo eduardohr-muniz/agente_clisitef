@@ -15,24 +15,27 @@ class PdvDigitadoService {
   Future<void> continueTransaction({String? data, required int continueCode}) async {
     final response = await agenteClisitefRepository.continueTransaction(
         sessionId: transaction.value.startTransactionResponse!.sessionId, data: data?.toString() ?? '', continueCode: continueCode);
-    final event = DataEvents.fildIdToDataEvent[response.fieldId] ?? DataEvents.unknown;
-    final command = CommandEvents.fromCommandId(response.commandId);
-    transaction.value = transaction.value.copyWith(
-      cliSiTefResp: transaction.value.cliSiTefResp.onFildid(fieldId: response.fieldId, buffer: response.data ?? ''),
-      event: event,
-      command: command,
-      buffer: response.data ?? '',
-      fildId: response.fieldId,
-    );
-    if (response.clisitefStatus == 0) {
-      finishTransaction();
-      return;
-    }
-    if (continueCode != 0) return;
+    if (response != null) {
+      final event = DataEvents.fildIdToDataEvent[response.fieldId] ?? DataEvents.unknown;
+      final command = CommandEvents.fromCommandId(response.commandId);
+      transaction.value = transaction.value.copyWith(
+        cliSiTefResp: transaction.value.cliSiTefResp.onFildid(fieldId: response.fieldId, buffer: response.data ?? ''),
+        event: event,
+        command: command,
+        buffer: response.data ?? '',
+        fildId: response.fieldId,
+      );
+      if (response.clisitefStatus == 0) {
+        finishTransaction();
+        return;
+      }
+      if (continueCode != 0) return;
 
-    if (response.fieldMaxLength > 0 || response.fieldId == 102 || response.fieldId == 123) {
-      return;
+      if (response.fieldMaxLength > 0 || response.fieldId == 102 || response.fieldId == 123) {
+        return;
+      }
     }
+
     await continueTransaction(continueCode: continueCode);
   }
 

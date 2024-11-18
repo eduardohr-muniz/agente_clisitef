@@ -27,19 +27,22 @@ class PdvPinpadService {
   Future<void> continueTransaction({String? data, required int continueCode}) async {
     final response = await agenteClisitefRepository.continueTransaction(
         sessionId: _currentTransaction.startTransactionResponse!.sessionId, data: data?.toString() ?? '', continueCode: continueCode);
-    _updateTransaction(response: response);
-    if (response.commandId == 21) {
-      await continueTransaction(continueCode: continueCode, data: '1');
-      return;
+    if (response != null) {
+      _updateTransaction(response: response);
+      if (response.commandId == 21) {
+        await continueTransaction(continueCode: continueCode, data: '1');
+        return;
+      }
+      if (continueCode != 0) return;
+      if (response.fieldId == 5005) {
+        _updatePaymentStatus(PaymentStatus.sucess);
+        _updateTransaction();
+      }
+      if (response.fieldMaxLength > 0) {
+        return;
+      }
     }
-    if (continueCode != 0) return;
-    // if (continueCode == 0) {
-    //   _updatePaymentStatus(PaymentStatus.sucess);
-    //   _updateTransaction();
-    // }
-    if (response.fieldMaxLength > 0) {
-      return;
-    }
+
     await continueTransaction(continueCode: continueCode);
   }
 
