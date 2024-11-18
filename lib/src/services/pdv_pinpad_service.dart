@@ -33,10 +33,10 @@ class PdvPinpadService {
       return;
     }
     if (continueCode != 0) return;
-    if (continueCode == 0) {
-      _updatePaymentStatus(PaymentStatus.sucess);
-      _updateTransaction();
-    }
+    // if (continueCode == 0) {
+    //   _updatePaymentStatus(PaymentStatus.sucess);
+    //   _updateTransaction();
+    // }
     if (response.fieldMaxLength > 0) {
       return;
     }
