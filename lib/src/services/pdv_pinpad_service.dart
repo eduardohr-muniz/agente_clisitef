@@ -36,7 +36,6 @@ class PdvPinpadService {
       if (continueCode != 0) return;
       if (response.fieldId == 0 && response.clisitefStatus == 0) {
         _updatePaymentStatus(PaymentStatus.sucess);
-        _updateTransaction();
         return;
       }
     }
