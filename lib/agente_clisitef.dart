@@ -37,6 +37,7 @@ class AgenteClisitef {
     assert(_clisitefClient != null, 'Call AgenteClisitef.initialize(AgenteClisitefConfig) before using clisitefClient');
     return _clisitefClient!;
   }
+  //getFild
 
   static IAgenteClisitefRepository get instance {
     assert(_agenteClisitefRepository != null, 'Call AgenteClisitef.initialize(AgenteClisitefConfig) before using agenteClisitefRepository');
