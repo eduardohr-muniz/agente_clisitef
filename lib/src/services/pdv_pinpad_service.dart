@@ -37,6 +37,7 @@ class PdvPinpadService {
       if (response.fieldId == 0 && response.clisitefStatus == 0) {
         _updatePaymentStatus(PaymentStatus.sucess);
         _updateTransaction();
+        return;
       }
     }
 
