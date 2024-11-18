@@ -30,7 +30,7 @@ class AgenteClisitefRepository implements IAgenteClisitefRepository {
   }
 
   @override
-  Future<ContinueTransactionResponse> continueTransaction({required String sessionId, required int continueCode, String? data}) async {
+  Future<ContinueTransactionResponse?> continueTransaction({required String sessionId, required int continueCode, String? data}) async {
     Map<String, dynamic> params = {
       'sessionId': sessionId,
       'data': data,
