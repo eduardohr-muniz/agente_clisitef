@@ -20,7 +20,6 @@ class PdvPinpadService {
   Transaction get currentTransaction => _currentTransaction;
 
   _updatePaymentStatus(PaymentStatus status) {
-    _currentTransaction = _currentTransaction.copyWith(paymentStatus: status);
     _paymentStatusStreamController.add(status);
   }
 
