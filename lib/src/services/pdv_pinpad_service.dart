@@ -38,7 +38,7 @@ class PdvPinpadService {
         return;
       }
     }
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 200));
     await continueTransaction(continueCode: continueCode);
   }
 
