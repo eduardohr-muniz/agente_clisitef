@@ -24,6 +24,7 @@ class PdvDigitadoService {
         command: command,
         buffer: response.data ?? '',
         fildId: response.fieldId,
+        commandId: response.commandId,
       );
       if (response.clisitefStatus == 0) {
         finishTransaction();

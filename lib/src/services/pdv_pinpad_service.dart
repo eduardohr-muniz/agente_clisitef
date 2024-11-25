@@ -85,6 +85,7 @@ class PdvPinpadService {
         command: command,
         buffer: response.data ?? '',
         fildId: response.fieldId,
+        commandId: response.commandId,
       );
     }
     if (startTransactionResponse != null) {

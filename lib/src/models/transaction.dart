@@ -12,6 +12,7 @@ class Transaction {
   final String buffer;
   final CommandEvents command;
   final int fildId;
+  final int? commandId;
   Transaction({
     this.startTransactionResponse,
     this.paymentStatus = PaymentStatus.unknow,
@@ -20,6 +21,7 @@ class Transaction {
     this.buffer = '',
     this.command = CommandEvents.unknown,
     this.fildId = 0,
+    this.commandId,
   });
   factory Transaction.empty() {
     return Transaction(cliSiTefResp: CliSiTefResp(codResult: {}), paymentStatus: PaymentStatus.unknow);
@@ -33,6 +35,7 @@ class Transaction {
     String? buffer,
     CommandEvents? command,
     int? fildId,
+    int? commandId,
   }) {
     return Transaction(
       startTransactionResponse: startTransactionResponse ?? this.startTransactionResponse,
@@ -42,11 +45,12 @@ class Transaction {
       buffer: buffer ?? this.buffer,
       command: command ?? this.command,
       fildId: fildId ?? this.fildId,
+      commandId: commandId ?? this.commandId,
     );
   }
 
   @override
   String toString() {
-    return 'Transaction(startTransactionResponse: $startTransactionResponse, paymentStatus: $paymentStatus, cliSiTefResp: $cliSiTefResp, event: $event, buffer: $buffer, command: $command, fildId: $fildId)';
+    return 'Transaction(startTransactionResponse: $startTransactionResponse, paymentStatus: $paymentStatus, cliSiTefResp: $cliSiTefResp, event: $event, buffer: $buffer, command: $command, fildId: $fildId, commandId: $commandId)';
   }
 }
