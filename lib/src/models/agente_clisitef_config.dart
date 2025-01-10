@@ -31,6 +31,10 @@ class AgenteClisitefConfig {
   final String cashierOperator;
 
   final bool enableLogs;
+
+  final bool saveLogsInDirectory;
+
+  final int? clearLogsInDays;
   AgenteClisitefConfig({
     this.trnAdditionalParameters = '',
     this.trnInitParameters = '',
@@ -43,6 +47,8 @@ class AgenteClisitefConfig {
     this.cashierOperator = 'CAIXA',
     this.agenteIp = 'https://127.0.0.1',
     this.enableLogs = false,
+    this.saveLogsInDirectory = false,
+    this.clearLogsInDays = 2,
   });
 
   Map<String, dynamic> toMap() {

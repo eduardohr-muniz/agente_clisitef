@@ -1,16 +1,19 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:agente_clisitef/src/services/client/clien_exports.dart';
+import 'package:agente_clisitef/src/services/log/log.dart';
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 
 class ClientDio implements IClient {
   late final Dio _dio;
-  final log = Logger();
+  late Logger _logger;
   final bool enableLogs;
+  final bool saveLogsInDirectory;
 
-  ClientDio({BaseOptions? baseOptions, this.enableLogs = false}) {
+  ClientDio({BaseOptions? baseOptions, this.enableLogs = false, this.saveLogsInDirectory = false, int? clearLogInDays}) {
     _dio = Dio(baseOptions ?? _defaultOptions);
+    _logger = WbaLogs().logger(logName: 'clisitef_requests', saveOnDirectory: saveLogsInDirectory, clearLogInDays: clearLogInDays);
   }
 
   final _defaultOptions = BaseOptions();
@@ -210,22 +213,22 @@ class ClientDio implements IClient {
   void _logInfo(String path, String methodo,
       {Map<String, dynamic>? headers, Map<String, dynamic>? baseOptions, Map<String, dynamic>? queryParamters, dynamic data}) {
     if (enableLogs == false) return;
-    log.i(
+    _logger.i(
         'METHOD: $methodo \nPATH: ${_dio.options.baseUrl}$path \nQUERYPARAMTERS: $queryParamters \nHEADERS: $headers \nBASEOPTIONS: $baseOptions \nDATA: ${data is Uint8List ? 'bytes' : data}');
   }
 
   void _logError({String? error, String? message, String? statusCode, StackTrace? stackTrace}) {
     if (enableLogs == false) return;
-    log.e('ERROR: $error \nMESSAGE: $message \nSTATUSCODE: $statusCode');
+    _logger.e('ERROR: $error \nMESSAGE: $message \nSTATUSCODE: $statusCode');
   }
 
   void _logResponse(String path, String methodo, {Response? response, String? time}) {
     if (enableLogs == false) return;
     if (response?.statusCode == 200) {
-      log.d(
+      _logger.i(
           '[RESPONSE]: ${response?.statusCode}\nMETHOD: $methodo \nPATH: ${_dio.options.baseUrl}$path \nTIME: 🕑$time ms \nRESPONSE: ${response?.data}');
     } else {
-      log.w(
+      _logger.d(
           '[RESPONSE]: ${response?.statusCode}\nMETHOD: $methodo \nPATH: ${_dio.options.baseUrl}$path \nTIME: 🕑$time ms \nRESPONSE: ${response?.data}');
     }
   }
