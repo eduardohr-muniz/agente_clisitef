@@ -32,6 +32,7 @@ class WbaLogs extends LogOutput {
 
     return Logger(
       output: this,
+      filter: ProductionFilter(),
       printer: SimplePrinter(printTime: true),
     );
   }

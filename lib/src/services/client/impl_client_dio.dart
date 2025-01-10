@@ -16,7 +16,7 @@ class ClientDio implements IClient {
     _logger = WbaLogs().logger(logName: 'clisitef_requests', saveOnDirectory: saveLogsInDirectory, clearLogInDays: clearLogInDays);
   }
 
-  final _defaultOptions = BaseOptions();
+  final _defaultOptions = BaseOptions(baseUrl: 'hhtps://localhost:8080');
 
   @override
   IClient auth() {
