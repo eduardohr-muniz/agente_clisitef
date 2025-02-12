@@ -109,7 +109,7 @@ class PdvPinpadService {
           await continueTransaction(continueCode: 0, data: '3', tipoTransacao: tipoTransacao);
         },
         "Forneca o codigo do superviso": () async {
-          continueTransaction(continueCode: 0, tipoTransacao: tipoTransacao).call();
+          continueTransaction(continueCode: 0, tipoTransacao: tipoTransacao);
         },
         "1:Cancelamento de Cartao de Debito;2:Cancelamento de Cartao de Credito;3:Cancelamento Venda Private Label;4:Cancelamento Saque Fininvest;5:Cancelamento de Pre-autorizacao;6:Cancelamento de Confirmacao de Pre-autorizacao;7:Cancelamento Garantia de Cheque Tecban;8:Cancelamento Saque GetNet;9:Cancelamento de Emissao de Pontos;10:Cancelamento Carteira Digital;":
             () async {
