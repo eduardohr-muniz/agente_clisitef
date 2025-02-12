@@ -1,4 +1,3 @@
-import 'dart:nativewrappers/_internal/vm/lib/ffi_allocation_patch.dart';
 import 'package:agente_clisitef/src/models/cancelar_transacao_dto.dart';
 import 'package:agente_clisitef/src/repositories/responses/continue_transaction_response.dart';
 import 'package:agente_clisitef/src/repositories/responses/start_transaction_response.dart';
