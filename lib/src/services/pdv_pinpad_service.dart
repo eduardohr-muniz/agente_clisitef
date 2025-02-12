@@ -1,3 +1,7 @@
+import 'dart:nativewrappers/_internal/vm/lib/ffi_allocation_patch.dart';
+
+import 'package:agente_clisitef/src/enums/transaction_type.dart';
+import 'package:agente_clisitef/src/models/cancelar_transacao_dto.dart';
 import 'package:agente_clisitef/src/models/payment_status.dart';
 import 'package:agente_clisitef/src/repositories/responses/continue_transaction_response.dart';
 import 'package:agente_clisitef/src/repositories/responses/start_transaction_response.dart';
@@ -19,27 +23,8 @@ class PdvPinpadService {
   Transaction _currentTransaction = Transaction(cliSiTefResp: CliSiTefResp(codResult: {}));
   Transaction get currentTransaction => _currentTransaction;
 
-  _updatePaymentStatus(PaymentStatus status) {
-    _paymentStatusStreamController.add(status);
-  }
-
-  Future<void> continueTransaction({String? data, required int continueCode}) async {
-    final response = await agenteClisitefRepository.continueTransaction(
-        sessionId: _currentTransaction.startTransactionResponse!.sessionId, data: data?.toString() ?? '', continueCode: continueCode);
-    if (response != null) {
-      _updateTransaction(response: response);
-      if (response.commandId == 21) {
-        await continueTransaction(continueCode: continueCode, data: '1');
-        return;
-      }
-      if (continueCode != 0) return;
-      if (response.fieldId == 0 && response.clisitefStatus == 0) {
-        _updatePaymentStatus(PaymentStatus.sucess);
-        return;
-      }
-    }
-    await Future.delayed(const Duration(milliseconds: 200));
-    await continueTransaction(continueCode: continueCode);
+  void dispose() {
+    _transactionStreamController.close();
   }
 
   Future<void> startTransaction({required PaymentMethod paymentMethod, required double amount}) async {
@@ -52,7 +37,33 @@ class PdvPinpadService {
     );
     _updateTransaction(startTransactionResponse: startTransactionResponse);
 
-    continueTransaction(continueCode: 0);
+    continueTransaction(continueCode: 0, tipoTransacao: TipoTransacao.transacao);
+  }
+
+  Future<void> extornarTransacao({required CancelarTransacaoDto cancelarTransacaoDto}) async {}
+
+  Future<void> continueTransaction({String? data, required int continueCode, required TipoTransacao tipoTransacao}) async {
+    final response = await agenteClisitefRepository.continueTransaction(
+        sessionId: _currentTransaction.startTransactionResponse!.sessionId, data: data?.toString() ?? '', continueCode: continueCode);
+    if (response != null) {
+      _updateTransaction(response: response);
+      if (tipoTransacao == TipoTransacao.transacao) {
+        final customComand = _customComandId(response.fieldId, response.clisitefStatus);
+        if (customComand != null) {
+          if (continueCode != 0) return;
+          _mapFuncTransacao(continueCode, tipoTransacao)[customComand]?.call();
+          return;
+        } else {
+          _mapFuncTransacao(continueCode, tipoTransacao)[response.commandId]?.call();
+          return;
+        }
+      }
+      if (tipoTransacao == TipoTransacao.cancelarTransacao) {
+        _mapFuncCancelarTransacao(tipoTransacao: tipoTransacao)[response.data ?? '']?.call();
+      }
+    }
+    await Future.delayed(const Duration(milliseconds: 200));
+    await continueTransaction(continueCode: continueCode, tipoTransacao: tipoTransacao);
   }
 
   Future<void> finishTransaction() async {
@@ -65,12 +76,6 @@ class PdvPinpadService {
     );
     _updatePaymentStatus(PaymentStatus.done);
   }
-
-  void dispose() {
-    _transactionStreamController.close();
-  }
-
-  Future<void> cancelTransaction() async => await continueTransaction(continueCode: -1);
 
   void _updateTransaction({ContinueTransactionResponse? response, StartTransactionResponse? startTransactionResponse}) {
     if (response != null) {
@@ -93,5 +98,54 @@ class PdvPinpadService {
     }
 
     _transactionStreamController.add(_currentTransaction);
+  }
+
+  _updatePaymentStatus(PaymentStatus status) {
+    _paymentStatusStreamController.add(status);
+  }
+
+  Future<void> cancelTransaction() async => await continueTransaction(continueCode: -1, tipoTransacao: TipoTransacao.transacao);
+
+  Map<String, Future<void> Function()> _mapFuncCancelarTransacao({required TipoTransacao tipoTransacao}) => {
+        "1:Teste de comunicacao;2:Reimpressao de comprovante;3:Cancelamento de transacao;4:Pre-autorizacao;5:Consulta parcelas CDC;6:Consulta Private Label;7:Consulta saque e saque Fininvest;8:Consulta Saldo Debito;9:Consulta Saldo Credito;10:Outros Cielo;11:Carga forcada de tabelas no pinpad (Servidor);12:Consulta Saque Parcelado;13:Consulta Parcelas Cred. Conductor;14:Consulta Parcelas Cred. MarketPay;":
+            () async {
+          continueTransaction(continueCode: 0, data: '3', tipoTransacao: tipoTransacao).call();
+        },
+        "Forneca o codigo do superviso": () async {
+          continueTransaction(continueCode: 0, tipoTransacao: tipoTransacao).call();
+        },
+        "1:Cancelamento de Cartao de Debito;2:Cancelamento de Cartao de Credito;3:Cancelamento Venda Private Label;4:Cancelamento Saque Fininvest;5:Cancelamento de Pre-autorizacao;6:Cancelamento de Confirmacao de Pre-autorizacao;7:Cancelamento Garantia de Cheque Tecban;8:Cancelamento Saque GetNet;9:Cancelamento de Emissao de Pontos;10:Cancelamento Carteira Digital;":
+            () async {
+          continueTransaction(continueCode: 0, data: '2', tipoTransacao: tipoTransacao).call();
+        },
+        "Digite o valor da transacao": () async {
+          String valor = '100';
+          continueTransaction(continueCode: 0, data: valor, tipoTransacao: tipoTransacao).call();
+        },
+        "Data da transacao (DDMMAAAA)": () async {
+          await continueTransaction(continueCode: 0, data: 'ddmmyyyy', tipoTransacao: tipoTransacao).call();
+        },
+        "Forneca o numero do documento a ser cancelado": () async {
+          await continueTransaction(continueCode: 0, data: '123456', tipoTransacao: tipoTransacao).call();
+        },
+        "1:Magnetico/Chip;2:Digitado;": () async {
+          continueTransaction(continueCode: 0, data: '1', tipoTransacao: tipoTransacao).call();
+        }
+      };
+
+  Map<int, Future<void> Function()> _mapFuncTransacao(int continueCode, TipoTransacao tipoTransacao) => {
+        21: () async {
+          await continueTransaction(continueCode: continueCode, data: '1', tipoTransacao: tipoTransacao);
+        },
+        -11: () async {
+          _updatePaymentStatus(PaymentStatus.sucess);
+        }
+      };
+
+  int? _customComandId(int fieldId, int clisitefStatus) {
+    if (fieldId == 0 && clisitefStatus == 0) {
+      return -11;
+    }
+    return null;
   }
 }

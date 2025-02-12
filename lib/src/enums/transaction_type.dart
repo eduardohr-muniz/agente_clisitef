@@ -1,0 +1,4 @@
+enum TipoTransacao {
+  transacao,
+  cancelarTransacao;
+}
