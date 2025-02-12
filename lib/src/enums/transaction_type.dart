@@ -1,4 +1,0 @@
-enum TipoTransacao {
-  transacao,
-  cancelarTransacao;
-}

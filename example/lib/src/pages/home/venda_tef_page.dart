@@ -42,7 +42,7 @@ class _VendaPinpadPageState extends State<VendaPinpadPage> {
                               const Text('Pagameto realizado com sucesso!'),
                               FilledButton(
                                   onPressed: () {
-                                    AgenteClisitef.pdvPinpad.continueTransaction(continueCode: 0);
+                                    AgenteClisitef.pdvPinpad.continueTransaction(continueCode: 0, tipoTransacao: TipoTransacao.venda);
                                   },
                                   child: const Text('ok'))
                             ],
@@ -56,13 +56,13 @@ class _VendaPinpadPageState extends State<VendaPinpadPage> {
                                 children: [
                                   FilledButton(
                                       onPressed: () {
-                                        AgenteClisitef.pdvPinpad.continueTransaction(continueCode: -1);
+                                        AgenteClisitef.pdvPinpad.continueTransaction(continueCode: -1, tipoTransacao: TipoTransacao.venda);
                                         widget.tabController.animateTo(0);
                                       },
                                       child: const Text('cancelar')),
                                   FilledButton(
                                       onPressed: () {
-                                        AgenteClisitef.pdvPinpad.continueTransaction(continueCode: 0);
+                                        AgenteClisitef.pdvPinpad.continueTransaction(continueCode: 0, tipoTransacao: TipoTransacao.venda);
                                       },
                                       child: const Text('ok')),
                                 ],

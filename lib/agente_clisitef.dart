@@ -14,6 +14,7 @@ export './src/models/comand_events.dart';
 export './src/services/pdv_pinpad_service.dart';
 export './src/models/transaction.dart';
 export './src/models/payment_status.dart';
+export './src/enums/tipo_transacao.dart';
 
 AgenteClisitefConfig? _agenteClisitefConfig;
 IClient? _clisitefClient;
