@@ -97,7 +97,7 @@ class PdvPinpadService {
     _transactionStreamController.add(_currentTransaction);
   }
 
-  _updatePaymentStatus(PaymentStatus status) {
+  void _updatePaymentStatus(PaymentStatus status) {
     _paymentStatusStreamController.add(status);
   }
 
@@ -106,27 +106,27 @@ class PdvPinpadService {
   Map<String, Future<void> Function()> _mapFuncCancelarTransacao({required TipoTransacao tipoTransacao}) => {
         "1:Teste de comunicacao;2:Reimpressao de comprovante;3:Cancelamento de transacao;4:Pre-autorizacao;5:Consulta parcelas CDC;6:Consulta Private Label;7:Consulta saque e saque Fininvest;8:Consulta Saldo Debito;9:Consulta Saldo Credito;10:Outros Cielo;11:Carga forcada de tabelas no pinpad (Servidor);12:Consulta Saque Parcelado;13:Consulta Parcelas Cred. Conductor;14:Consulta Parcelas Cred. MarketPay;":
             () async {
-          continueTransaction(continueCode: 0, data: '3', tipoTransacao: tipoTransacao).call();
+          await continueTransaction(continueCode: 0, data: '3', tipoTransacao: tipoTransacao);
         },
         "Forneca o codigo do superviso": () async {
           continueTransaction(continueCode: 0, tipoTransacao: tipoTransacao).call();
         },
         "1:Cancelamento de Cartao de Debito;2:Cancelamento de Cartao de Credito;3:Cancelamento Venda Private Label;4:Cancelamento Saque Fininvest;5:Cancelamento de Pre-autorizacao;6:Cancelamento de Confirmacao de Pre-autorizacao;7:Cancelamento Garantia de Cheque Tecban;8:Cancelamento Saque GetNet;9:Cancelamento de Emissao de Pontos;10:Cancelamento Carteira Digital;":
             () async {
-          continueTransaction(continueCode: 0, data: '2', tipoTransacao: tipoTransacao).call();
+          await continueTransaction(continueCode: 0, data: '2', tipoTransacao: tipoTransacao);
         },
         "Digite o valor da transacao": () async {
           String valor = '100';
-          continueTransaction(continueCode: 0, data: valor, tipoTransacao: tipoTransacao).call();
+          await continueTransaction(continueCode: 0, data: valor, tipoTransacao: tipoTransacao);
         },
         "Data da transacao (DDMMAAAA)": () async {
-          await continueTransaction(continueCode: 0, data: 'ddmmyyyy', tipoTransacao: tipoTransacao).call();
+          await continueTransaction(continueCode: 0, data: 'ddmmyyyy', tipoTransacao: tipoTransacao);
         },
         "Forneca o numero do documento a ser cancelado": () async {
-          await continueTransaction(continueCode: 0, data: '123456', tipoTransacao: tipoTransacao).call();
+          await continueTransaction(continueCode: 0, data: '123456', tipoTransacao: tipoTransacao);
         },
         "1:Magnetico/Chip;2:Digitado;": () async {
-          continueTransaction(continueCode: 0, data: '1', tipoTransacao: tipoTransacao).call();
+          await continueTransaction(continueCode: 0, data: '1', tipoTransacao: tipoTransacao);
         }
       };
 
