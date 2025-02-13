@@ -1,10 +1,13 @@
-import 'package:agente_clisitef/src/models/cancelar_transacao_dto.dart';
+import 'dart:nativewrappers/_internal/vm/lib/ffi_allocation_patch.dart';
+
+import 'package:agente_clisitef/src/models/extorno.dart';
 import 'package:agente_clisitef/src/repositories/responses/continue_transaction_response.dart';
 import 'package:agente_clisitef/src/repositories/responses/start_transaction_response.dart';
 import 'package:agente_clisitef/agente_clisitef.dart';
 import 'package:agente_clisitef/src/models/clisitef_resp.dart';
 import 'package:agente_clisitef/src/repositories/i_agente_clisitef_repository.dart';
 import 'dart:async';
+import 'package:intl/intl.dart';
 
 class PdvPinpadService {
   final IAgenteClisitefRepository agenteClisitefRepository;
@@ -18,6 +21,7 @@ class PdvPinpadService {
   Stream<Transaction> get transactionStream => _transactionStreamController.stream;
   Transaction _currentTransaction = Transaction(cliSiTefResp: CliSiTefResp(codResult: {}));
   Transaction get currentTransaction => _currentTransaction;
+  Extorno? _extorno;
 
   void dispose() {
     _transactionStreamController.close();
@@ -36,7 +40,9 @@ class PdvPinpadService {
     continueTransaction(continueCode: 0, tipoTransacao: TipoTransacao.venda);
   }
 
-  Future<void> extornarTransacao({required CancelarTransacaoDto cancelarTransacaoDto}) async {}
+  Future<void> extornarTransacao({required Extorno extorno}) async {
+    _extorno = extorno;
+  }
 
   Future<void> continueTransaction({String? data, required int continueCode, required TipoTransacao tipoTransacao}) async {
     final response = await agenteClisitefRepository.continueTransaction(
@@ -44,18 +50,28 @@ class PdvPinpadService {
     if (response != null) {
       _updateTransaction(response: response);
       if (tipoTransacao == TipoTransacao.venda) {
+        final map = _mapFuncTransacao(continueCode, tipoTransacao)[response.commandId];
+        if (map != null) {
+          map.call();
+          return;
+        }
+
         final customComand = _customComandId(response.fieldId, response.clisitefStatus);
         if (customComand != null) {
           if (continueCode != 0) return;
-          _mapFuncTransacao(continueCode, tipoTransacao)[customComand]?.call();
-          return;
-        } else {
-          _mapFuncTransacao(continueCode, tipoTransacao)[response.commandId]?.call();
-          return;
+          final map = _mapFuncTransacao(continueCode, tipoTransacao)[customComand];
+          if (map != null) {
+            map.call();
+            return;
+          }
         }
       }
       if (tipoTransacao == TipoTransacao.extorno) {
-        _mapFuncCancelarTransacao(tipoTransacao: tipoTransacao)[response.data ?? '']?.call();
+        final func = _mapFuncCancelarContains(response.data ?? '');
+        if (func != null) {
+          await func().call();
+          return;
+        }
       }
     }
     await Future.delayed(const Duration(milliseconds: 200));
@@ -102,30 +118,52 @@ class PdvPinpadService {
 
   Future<void> cancelTransaction() async => await continueTransaction(continueCode: -1, tipoTransacao: TipoTransacao.venda);
 
-  Map<String, Future<void> Function()> _mapFuncCancelarTransacao({required TipoTransacao tipoTransacao}) => {
-        "1:Teste de comunicacao;2:Reimpressao de comprovante;3:Cancelamento de transacao;4:Pre-autorizacao;5:Consulta parcelas CDC;6:Consulta Private Label;7:Consulta saque e saque Fininvest;8:Consulta Saldo Debito;9:Consulta Saldo Credito;10:Outros Cielo;11:Carga forcada de tabelas no pinpad (Servidor);12:Consulta Saque Parcelado;13:Consulta Parcelas Cred. Conductor;14:Consulta Parcelas Cred. MarketPay;":
-            () async {
-          await continueTransaction(continueCode: 0, data: '3', tipoTransacao: tipoTransacao);
+  Future<void> Function()? _mapFuncCancelarContains(String data) {
+    final key = _mapFuncCancelarTransacao(tipoTransacao: TipoTransacao.extorno, data: data)
+        .keys
+        .firstWhere((element) => element.contains(data), orElse: () => '');
+    if (key.isNotEmpty) {
+      return _mapFuncCancelarTransacao(tipoTransacao: TipoTransacao.extorno, data: data)[key]!;
+    }
+    return null;
+  }
+
+  Map<String, Future<void> Function()> _mapFuncCancelarTransacao({required TipoTransacao tipoTransacao, required String data}) => {
+        "Cancelamento de transacao": () async {
+          final options = data.split(';');
+          final result = _onlyNumbersRgx(options.firstWhere((e) => e.toLowerCase().contains('cancelamento de transacao')));
+          await continueTransaction(continueCode: 0, data: result, tipoTransacao: tipoTransacao);
         },
         "Forneca o codigo do superviso": () async {
           continueTransaction(continueCode: 0, tipoTransacao: tipoTransacao);
         },
-        "1:Cancelamento de Cartao de Debito;2:Cancelamento de Cartao de Credito;3:Cancelamento Venda Private Label;4:Cancelamento Saque Fininvest;5:Cancelamento de Pre-autorizacao;6:Cancelamento de Confirmacao de Pre-autorizacao;7:Cancelamento Garantia de Cheque Tecban;8:Cancelamento Saque GetNet;9:Cancelamento de Emissao de Pontos;10:Cancelamento Carteira Digital;":
-            () async {
-          await continueTransaction(continueCode: 0, data: '2', tipoTransacao: tipoTransacao);
+        "Cancelamento de Cartao de Credito": () async {
+          final options = data.split(';');
+          final result = switch (_extorno!.paymentMethod) {
+            FunctionId.debito => _onlyNumbersRgx(options.firstWhere((e) => e.toLowerCase().contains('debito'))),
+            FunctionId.credito => _onlyNumbersRgx(options.firstWhere((e) => e.toLowerCase().contains('credito'))),
+            FunctionId.vendaCarteiraDigital => _onlyNumbersRgx(options.firstWhere((e) => e.toLowerCase().contains('carteira digital'))),
+            _ => '2',
+          };
+          await continueTransaction(continueCode: 0, data: result, tipoTransacao: tipoTransacao);
         },
         "Digite o valor da transacao": () async {
-          String valor = '100';
-          await continueTransaction(continueCode: 0, data: valor, tipoTransacao: tipoTransacao);
+          String amount = _extorno!.amount.toStringAsFixed(2).replaceAll('.', '');
+          await continueTransaction(continueCode: 0, data: amount, tipoTransacao: tipoTransacao);
         },
-        "Data da transacao (DDMMAAAA)": () async {
-          await continueTransaction(continueCode: 0, data: 'ddmmyyyy', tipoTransacao: tipoTransacao);
+        "Data da transacao": () async {
+          String date = DateFormat('ddMMyyyy').format(_extorno!.data);
+
+          await continueTransaction(continueCode: 0, data: date, tipoTransacao: tipoTransacao);
         },
         "Forneca o numero do documento a ser cancelado": () async {
-          await continueTransaction(continueCode: 0, data: '123456', tipoTransacao: tipoTransacao);
+          await continueTransaction(continueCode: 0, data: _extorno!.nsuHost, tipoTransacao: tipoTransacao);
         },
-        "1:Magnetico/Chip;2:Digitado;": () async {
-          await continueTransaction(continueCode: 0, data: '1', tipoTransacao: tipoTransacao);
+        "Magnetico": () async {
+          final options = data.split(';');
+          final result = _onlyNumbersRgx(options.firstWhere((e) => e.toLowerCase().contains('magnetico')));
+
+          await continueTransaction(continueCode: 0, data: result, tipoTransacao: tipoTransacao);
         }
       };
 
@@ -143,5 +181,9 @@ class PdvPinpadService {
       return -11;
     }
     return null;
+  }
+
+  static String _onlyNumbersRgx(String text) {
+    return text.replaceAll(RegExp(r'\D'), '');
   }
 }

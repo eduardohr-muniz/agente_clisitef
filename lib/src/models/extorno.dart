@@ -1,11 +1,11 @@
 import 'package:agente_clisitef/agente_clisitef.dart';
 
-class CancelarTransacaoDto {
+class Extorno {
   final PaymentMethod paymentMethod;
   final double amount;
   final String nsuHost;
   final DateTime data;
-  CancelarTransacaoDto({
+  Extorno({
     required this.paymentMethod,
     required this.amount,
     required this.nsuHost,
