@@ -1,4 +1,3 @@
-import 'dart:nativewrappers/_internal/vm/lib/ffi_allocation_patch.dart';
 import 'package:agente_clisitef/src/repositories/responses/continue_transaction_response.dart';
 import 'package:agente_clisitef/src/repositories/responses/start_transaction_response.dart';
 import 'package:agente_clisitef/agente_clisitef.dart';
@@ -67,7 +66,7 @@ class PdvPinpadService {
       if (tipoTransacao == TipoTransacao.extorno) {
         final func = _mapFuncCancelarContains(response.data ?? '');
         if (func != null) {
-          await func().call();
+          await func();
           return;
         }
       }
