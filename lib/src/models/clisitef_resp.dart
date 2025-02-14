@@ -32,7 +32,7 @@ class CliSiTefResp {
   double valorGorjeta;
   double valorDevolucao;
   double valorPagamento;
-  double valorASerCancelado;
+  String valorASerCancelado;
   String tipoCartaoBonus;
   String nomeInstituicao;
   String codigoEstabelecimento;
@@ -102,7 +102,7 @@ class CliSiTefResp {
     this.valorGorjeta = 0.0,
     this.valorDevolucao = 0.0,
     this.valorPagamento = 0.0,
-    this.valorASerCancelado = 0.0,
+    this.valorASerCancelado = '',
     this.tipoCartaoBonus = '',
     this.nomeInstituicao = '',
     this.codigoEstabelecimento = '',
@@ -233,7 +233,7 @@ class CliSiTefResp {
         valorPagamento = double.parse(buffer);
         break;
       case 146:
-        valorASerCancelado = double.parse(buffer);
+        valorASerCancelado = buffer;
         break;
       case 155:
         tipoCartaoBonus = buffer;

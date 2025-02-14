@@ -13,7 +13,11 @@ class ClientDio implements IClient {
 
   ClientDio({BaseOptions? baseOptions, this.enableLogs = false, this.saveLogsInDirectory = false, int? clearLogInDays}) {
     _dio = Dio(baseOptions ?? _defaultOptions);
-    _logger = WbaLogs().logger(logName: 'clisitef_requests', saveOnDirectory: saveLogsInDirectory, clearLogInDays: clearLogInDays);
+    if (saveLogsInDirectory) {
+      _logger = WbaLogs().logger(logName: 'clisitef_requests', saveOnDirectory: saveLogsInDirectory, clearLogInDays: clearLogInDays);
+    } else {
+      _logger = Logger();
+    }
   }
 
   final _defaultOptions = BaseOptions(baseUrl: 'hhtps://localhost:8080');

@@ -89,4 +89,27 @@ class AgenteClisitefRepository implements IAgenteClisitefRepository {
   Future<void> discardSession() async {
     await client.delete('/agente/clisitef/session');
   }
+
+  @override
+  Future<StartTransactionResponse> startTransactionFunctions({required String sessionId, required int functionId}) async {
+    Map<String, dynamic> data = {
+      'sessionId': sessionId,
+      'functionId': functionId.toString(),
+      'trnAmount': '',
+      'taxInvoiceNumber': config.taxInvoiceNumber,
+      'taxInvoiceDate': config.taxInvoiceDate,
+      'taxInvoiceTime': config.taxInvoiceTime,
+      'cashierOperator': config.cashierOperator,
+      'tnrAdditionalParameters': config.trnAdditionalParameters,
+      'tnrInitParameters': config.trnInitParameters,
+    };
+
+    data.addAll(config.toMap());
+    final request = await client.post(
+      '/agente/clisitef/startTransaction',
+      data: data,
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    );
+    return StartTransactionResponse.fromMap(request.data);
+  }
 }

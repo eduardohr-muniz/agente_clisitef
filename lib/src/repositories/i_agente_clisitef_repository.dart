@@ -6,6 +6,7 @@ import 'package:agente_clisitef/src/repositories/responses/session_response.dart
 
 abstract class IAgenteClisitefRepository {
   Future<StartTransactionResponse> startTransaction({required PaymentMethod paymentMethod, required double amount});
+  Future<StartTransactionResponse> startTransactionFunctions({required String sessionId, required int functionId});
   Future<ContinueTransactionResponse?> continueTransaction({required String sessionId, required int continueCode, String? data});
   Future<FinishTransactionResponse> finishTransaction(
       {required String sessionId,

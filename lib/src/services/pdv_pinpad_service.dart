@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:agente_clisitef/src/repositories/responses/continue_transaction_response.dart';
 import 'package:agente_clisitef/src/repositories/responses/start_transaction_response.dart';
 import 'package:agente_clisitef/agente_clisitef.dart';
@@ -20,11 +22,15 @@ class PdvPinpadService {
   Transaction get currentTransaction => _currentTransaction;
   Extorno? _extorno;
 
+  bool _isFinish = false;
+
   void dispose() {
     _transactionStreamController.close();
+    _paymentStatusStreamController.close();
   }
 
   Future<void> startTransaction({required PaymentMethod paymentMethod, required double amount}) async {
+    _isFinish = false;
     _currentTransaction = Transaction.empty();
     _updatePaymentStatus(PaymentStatus.unknow);
     _transactionStreamController.add(_currentTransaction);
@@ -39,17 +45,28 @@ class PdvPinpadService {
 
   Future<void> extornarTransacao({required Extorno extorno}) async {
     _extorno = extorno;
+    final session = await agenteClisitefRepository.createSession();
+    final startTransactionResponse = await agenteClisitefRepository.startTransactionFunctions(
+      sessionId: session.sessionId,
+      functionId: 110,
+    );
+    _updateTransaction(startTransactionResponse: startTransactionResponse);
+
+    continueTransaction(continueCode: 0, tipoTransacao: TipoTransacao.extorno);
   }
 
   Future<void> continueTransaction({String? data, required int continueCode, required TipoTransacao tipoTransacao}) async {
+    if (_isFinish) return;
     final response = await agenteClisitefRepository.continueTransaction(
         sessionId: _currentTransaction.startTransactionResponse!.sessionId, data: data?.toString() ?? '', continueCode: continueCode);
+    await Future.delayed(const Duration(milliseconds: 500));
+
     if (response != null) {
       _updateTransaction(response: response);
       if (tipoTransacao == TipoTransacao.venda) {
         final map = _mapFuncTransacao(continueCode, tipoTransacao)[response.commandId];
         if (map != null) {
-          map.call();
+          await map.call();
           return;
         }
 
@@ -58,7 +75,7 @@ class PdvPinpadService {
           if (continueCode != 0) return;
           final map = _mapFuncTransacao(continueCode, tipoTransacao)[customComand];
           if (map != null) {
-            map.call();
+            await map.call();
             return;
           }
         }
@@ -71,8 +88,9 @@ class PdvPinpadService {
         }
       }
     }
-    await Future.delayed(const Duration(milliseconds: 200));
+
     await continueTransaction(continueCode: continueCode, tipoTransacao: tipoTransacao);
+    return;
   }
 
   Future<void> finishTransaction() async {
@@ -84,6 +102,7 @@ class PdvPinpadService {
       confirm: 1,
     );
     _updatePaymentStatus(PaymentStatus.done);
+    _isFinish = true;
   }
 
   void _updateTransaction({ContinueTransactionResponse? response, StartTransactionResponse? startTransactionResponse}) {
@@ -116,51 +135,51 @@ class PdvPinpadService {
   Future<void> cancelTransaction() async => await continueTransaction(continueCode: -1, tipoTransacao: TipoTransacao.venda);
 
   Future<void> Function()? _mapFuncCancelarContains(String data) {
-    final key = _mapFuncCancelarTransacao(tipoTransacao: TipoTransacao.extorno, data: data)
+    final key = _mapFuncCancelarTransacao(data: data.trim(), extorno: _extorno!)
         .keys
-        .firstWhere((element) => element.contains(data), orElse: () => '');
+        .firstWhere((k) => data.toLowerCase().trim().contains(k.toLowerCase().trim()), orElse: () => '');
     if (key.isNotEmpty) {
-      return _mapFuncCancelarTransacao(tipoTransacao: TipoTransacao.extorno, data: data)[key]!;
+      return _mapFuncCancelarTransacao(data: data, extorno: _extorno!)[key]!;
     }
     return null;
   }
 
-  Map<String, Future<void> Function()> _mapFuncCancelarTransacao({required TipoTransacao tipoTransacao, required String data}) => {
-        "Cancelamento de transacao": () async {
+  Map<String, Future<void> Function()> _mapFuncCancelarTransacao({required String data, required Extorno extorno}) => {
+        "cancelamento de transacao": () async {
           final options = data.split(';');
           final result = _onlyNumbersRgx(options.firstWhere((e) => e.toLowerCase().contains('cancelamento de transacao')));
-          await continueTransaction(continueCode: 0, data: result, tipoTransacao: tipoTransacao);
+          await continueTransaction(continueCode: 0, data: result, tipoTransacao: TipoTransacao.extorno);
         },
-        "Forneca o codigo do superviso": () async {
-          continueTransaction(continueCode: 0, tipoTransacao: tipoTransacao);
+        "forneca o codigo do superviso": () async {
+          continueTransaction(continueCode: 0, tipoTransacao: TipoTransacao.extorno);
         },
-        "Cancelamento de Cartao de Credito": () async {
+        "cancelamento de Cartao de Credito": () async {
           final options = data.split(';');
-          final result = switch (_extorno!.paymentMethod) {
+          final result = switch (extorno.paymentMethod) {
             FunctionId.debito => _onlyNumbersRgx(options.firstWhere((e) => e.toLowerCase().contains('debito'))),
             FunctionId.credito => _onlyNumbersRgx(options.firstWhere((e) => e.toLowerCase().contains('credito'))),
             FunctionId.vendaCarteiraDigital => _onlyNumbersRgx(options.firstWhere((e) => e.toLowerCase().contains('carteira digital'))),
             _ => '2',
           };
-          await continueTransaction(continueCode: 0, data: result, tipoTransacao: tipoTransacao);
+          await continueTransaction(continueCode: 0, data: result, tipoTransacao: TipoTransacao.extorno);
         },
-        "Digite o valor da transacao": () async {
-          String amount = _extorno!.amount.toStringAsFixed(2).replaceAll('.', '');
-          await continueTransaction(continueCode: 0, data: amount, tipoTransacao: tipoTransacao);
+        "valor da transacao": () async {
+          log('amount: ${extorno.amount}', name: 'valor da transacao');
+          String amount = extorno.amount.toStringAsFixed(2).replaceAll('.', '');
+          await continueTransaction(continueCode: 0, data: amount, tipoTransacao: TipoTransacao.extorno);
         },
-        "Data da transacao": () async {
-          String date = DateFormat('ddMMyyyy').format(_extorno!.data);
-
-          await continueTransaction(continueCode: 0, data: date, tipoTransacao: tipoTransacao);
+        "data da transacao": () async {
+          String date = DateFormat('ddMMyyyy').format(extorno.data);
+          await continueTransaction(continueCode: 0, data: date, tipoTransacao: TipoTransacao.extorno);
         },
-        "Forneca o numero do documento a ser cancelado": () async {
-          await continueTransaction(continueCode: 0, data: _extorno!.nsuHost, tipoTransacao: tipoTransacao);
+        "forneca o numero do documento a ser cancelado": () async {
+          await continueTransaction(continueCode: 0, data: extorno.nsuHost, tipoTransacao: TipoTransacao.extorno);
         },
         "Magnetico": () async {
           final options = data.split(';');
           final result = _onlyNumbersRgx(options.firstWhere((e) => e.toLowerCase().contains('magnetico')));
 
-          await continueTransaction(continueCode: 0, data: result, tipoTransacao: tipoTransacao);
+          await continueTransaction(continueCode: 0, data: result, tipoTransacao: TipoTransacao.extorno);
         }
       };
 
