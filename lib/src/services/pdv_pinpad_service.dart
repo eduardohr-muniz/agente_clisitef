@@ -1,5 +1,4 @@
 import 'dart:developer';
-
 import 'package:agente_clisitef/src/repositories/responses/continue_transaction_response.dart';
 import 'package:agente_clisitef/src/repositories/responses/start_transaction_response.dart';
 import 'package:agente_clisitef/agente_clisitef.dart';
@@ -21,6 +20,7 @@ class PdvPinpadService {
   Transaction _currentTransaction = Transaction(cliSiTefResp: CliSiTefResp(codResult: {}));
   Transaction get currentTransaction => _currentTransaction;
   Extorno? _extorno;
+  Completer<void>? _transactionCompleter;
 
   bool _isFinish = false;
 
@@ -57,40 +57,65 @@ class PdvPinpadService {
 
   Future<void> continueTransaction({String? data, required int continueCode, required TipoTransacao tipoTransacao}) async {
     if (_isFinish) return;
+
+    log('🔄 Iniciando continueTransaction - continueCode: $continueCode, tipoTransacao: $tipoTransacao, data: $data', name: 'REQUEST');
+
     final response = await agenteClisitefRepository.continueTransaction(
-        sessionId: _currentTransaction.startTransactionResponse!.sessionId, data: data?.toString() ?? '', continueCode: continueCode);
+      sessionId: _currentTransaction.startTransactionResponse!.sessionId,
+      data: data?.toString() ?? '',
+      continueCode: continueCode,
+    );
+
+    log('🔄 Resposta recebida - commandId: ${response?.commandId}, fieldId: ${response?.fieldId}', name: 'RESPONSE');
+
     await Future.delayed(const Duration(milliseconds: 500));
 
     if (response != null) {
-      _updateTransaction(response: response);
+      // 🔹 Verifique os mapeamentos de funções
       if (tipoTransacao == TipoTransacao.venda) {
+        _updateTransaction(response: response);
+
         final map = _mapFuncTransacao(continueCode, tipoTransacao)[response.commandId];
         if (map != null) {
+          log('⏩ Executando função mapeada para commandId: ${response.commandId}', name: 'TRANSACTION');
           await map.call();
           return;
         }
 
         final customComand = _customComandId(response.fieldId, response.clisitefStatus);
-        if (customComand != null) {
-          if (continueCode != 0) return;
-          final map = _mapFuncTransacao(continueCode, tipoTransacao)[customComand];
-          if (map != null) {
-            await map.call();
+        if (customComand != null && continueCode == 0) {
+          final mappedFunction = _mapFuncTransacao(continueCode, tipoTransacao)[customComand];
+          if (mappedFunction != null) {
+            log('⏩ Executando função personalizada para commandId: $customComand', name: 'TRANSACTION');
+            await mappedFunction.call();
             return;
           }
         }
       }
+
+      // 🔹 Verifique se há um cancelamento
       if (tipoTransacao == TipoTransacao.extorno) {
         final func = _mapFuncCancelarContains(response.data ?? '');
         if (func != null) {
+          log('⏩ Executando função de cancelamento', name: 'CANCEL');
           await func();
           return;
         }
+        _handleFinalizarExtorno(response.fieldId, response.clisitefStatus);
+      }
+
+      // 🔹 Verifique se deve finalizar
+      final finishFunction = _handleFinish(response.serviceMessage ?? '');
+      if (finishFunction != null) {
+        log('✅ Finalizando transação', name: 'FINISH');
+        finishFunction();
+        return;
       }
     }
 
+    // 🔄 Continue chamando recursivamente
+    log('🔄 Chamando continueTransaction novamente', name: 'RECURSION');
     await continueTransaction(continueCode: continueCode, tipoTransacao: tipoTransacao);
-    return;
   }
 
   Future<void> finishTransaction() async {
@@ -151,7 +176,7 @@ class PdvPinpadService {
           await continueTransaction(continueCode: 0, data: result, tipoTransacao: TipoTransacao.extorno);
         },
         "forneca o codigo do superviso": () async {
-          continueTransaction(continueCode: 0, tipoTransacao: TipoTransacao.extorno);
+          await continueTransaction(continueCode: 0, tipoTransacao: TipoTransacao.extorno);
         },
         "cancelamento de Cartao de Credito": () async {
           final options = data.split(';');
@@ -178,10 +203,19 @@ class PdvPinpadService {
         "Magnetico": () async {
           final options = data.split(';');
           final result = _onlyNumbersRgx(options.firstWhere((e) => e.toLowerCase().contains('magnetico')));
-
           await continueTransaction(continueCode: 0, data: result, tipoTransacao: TipoTransacao.extorno);
         }
       };
+
+  void Function()? _handleFinish(String serviceMessage) {
+    final map = {
+      "Agente nao esta esperando continua.": () {
+        _isFinish = true;
+        _updatePaymentStatus(PaymentStatus.unknow);
+      }
+    };
+    return map[serviceMessage];
+  }
 
   Map<int, Future<void> Function()> _mapFuncTransacao(int continueCode, TipoTransacao tipoTransacao) => {
         21: () async {
@@ -197,6 +231,13 @@ class PdvPinpadService {
       return -11;
     }
     return null;
+  }
+
+  _handleFinalizarExtorno(int fieldId, int clisitefStatus) {
+    if (fieldId == 0 && clisitefStatus == 0) {
+      _updatePaymentStatus(PaymentStatus.sucess);
+      finishTransaction();
+    }
   }
 
   static String _onlyNumbersRgx(String text) {

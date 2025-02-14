@@ -46,7 +46,7 @@ class ClientDio implements IClient {
         options: Options(headers: headers),
       );
       final DateTime end = DateTime.now();
-      _logResponse(path, "DELETE", response: response, time: end.difference(start).inMilliseconds.toString());
+      await _logResponse(path, "DELETE", response: response, time: end.difference(start).inMilliseconds.toString());
       return _dioResponseConverter(response);
     } on DioException catch (e) {
       _trowRestClientException(e);
@@ -73,7 +73,7 @@ class ClientDio implements IClient {
         options: Options(headers: headers),
       );
       final DateTime end = DateTime.now();
-      _logResponse(path, "DOWNLOAD", response: response, time: end.difference(start).inMilliseconds.toString());
+      await _logResponse(path, "DOWNLOAD", response: response, time: end.difference(start).inMilliseconds.toString());
       return _dioResponseConverter(response);
     } on DioException catch (e) {
       _trowRestClientException(e);
@@ -91,7 +91,7 @@ class ClientDio implements IClient {
         options: Options(headers: headers),
       );
       final DateTime end = DateTime.now();
-      _logResponse(path, "GET", response: response, time: end.difference(start).inMilliseconds.toString());
+      await _logResponse(path, "GET", response: response, time: end.difference(start).inMilliseconds.toString());
       return _dioResponseConverter(response);
     } on DioException catch (e) {
       _trowRestClientException(e);
@@ -110,7 +110,7 @@ class ClientDio implements IClient {
         options: Options(headers: headers),
       );
       final DateTime end = DateTime.now();
-      _logResponse(path, "PATCH", response: response, time: end.difference(start).inMilliseconds.toString());
+      await _logResponse(path, "PATCH", response: response, time: end.difference(start).inMilliseconds.toString());
       return _dioResponseConverter(response);
     } on DioException catch (e) {
       _trowRestClientException(e);
@@ -129,7 +129,7 @@ class ClientDio implements IClient {
         options: Options(headers: headers),
       );
       final DateTime end = DateTime.now();
-      _logResponse(path, "POST", response: response, time: end.difference(start).inMilliseconds.toString());
+      await _logResponse(path, "POST", response: response, time: end.difference(start).inMilliseconds.toString());
       return _dioResponseConverter(response);
     } on DioException catch (e) {
       _trowRestClientException(e);
@@ -148,7 +148,8 @@ class ClientDio implements IClient {
         options: Options(headers: headers),
       );
       final DateTime end = DateTime.now();
-      _logResponse(path, "PUT", response: response, time: end.difference(start).inMilliseconds.toString());
+      await _logResponse(path, "PUT", response: response, time: end.difference(start).inMilliseconds.toString());
+
       return _dioResponseConverter(response);
     } on DioException catch (e) {
       _trowRestClientException(e);
@@ -167,7 +168,7 @@ class ClientDio implements IClient {
         options: Options(headers: headers),
       );
       final DateTime end = DateTime.now();
-      _logResponse(path, "REQUEST", response: response, time: end.difference(start).inMilliseconds.toString());
+      await _logResponse(path, "REQUEST", response: response, time: end.difference(start).inMilliseconds.toString());
       return _dioResponseConverter(response);
     } on DioException catch (e) {
       return _trowRestClientException(e);
@@ -226,14 +227,15 @@ class ClientDio implements IClient {
     _logger.e('ERROR: $error \nMESSAGE: $message \nSTATUSCODE: $statusCode');
   }
 
-  void _logResponse(String path, String methodo, {Response? response, String? time}) {
+  Future<void> _logResponse(String path, String methodo, {Response? response, String? time}) async {
     if (enableLogs == false) return;
     if (response?.statusCode == 200) {
-      _logger.i(
+      _logger.d(
           '[RESPONSE]: ${response?.statusCode}\nMETHOD: $methodo \nPATH: ${_dio.options.baseUrl}$path \nTIME: 🕑$time ms \nRESPONSE: ${response?.data}');
     } else {
       _logger.d(
           '[RESPONSE]: ${response?.statusCode}\nMETHOD: $methodo \nPATH: ${_dio.options.baseUrl}$path \nTIME: 🕑$time ms \nRESPONSE: ${response?.data}');
     }
+    await Future.delayed(const Duration(milliseconds: 10));
   }
 }
