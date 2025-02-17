@@ -15,17 +15,19 @@ class AgenteClisitefRepository implements IAgenteClisitefRepository {
   AgenteClisitefConfig get config => AgenteClisitef.config;
 
   @override
-  Future<StartTransactionResponse> startTransaction({required PaymentMethod paymentMethod, required double amount}) async {
+  Future<StartTransactionResponse> startTransaction(
+      {required PaymentMethod paymentMethod, double? amount, String? taxInvoiceNumber, String? sesionId, String? functionId}) async {
     Map<String, dynamic> data = {
-      'trnAmount': amount.toStringAsFixed(2),
-      'functionId': paymentMethod.value,
-      'taxInvoiceNumber': config.taxInvoiceNumber,
+      'trnAmount': amount?.toStringAsFixed(2) ?? '',
+      'functionId': functionId ?? paymentMethod.value,
+      'taxInvoiceNumber': taxInvoiceNumber ?? '',
       'taxInvoiceDate': getDateNow(),
       'taxInvoiceTime': getTimeNow(),
       'cashierOperator': config.cashierOperator,
       'tnrAdditionalParameters': config.trnAdditionalParameters,
       'tnrInitParameters': config.trnInitParameters,
     };
+    if (sesionId != null) data['sessionId'] = sesionId;
 
     data.addAll(config.toMap());
     final request = await client.post(
@@ -95,29 +97,6 @@ class AgenteClisitefRepository implements IAgenteClisitefRepository {
   @override
   Future<void> discardSession() async {
     await client.delete('/agente/clisitef/session');
-  }
-
-  @override
-  Future<StartTransactionResponse> startTransactionFunctions({required String sessionId, required int functionId}) async {
-    Map<String, dynamic> data = {
-      'sessionId': sessionId,
-      'functionId': functionId.toString(),
-      'trnAmount': '',
-      'taxInvoiceNumber': config.taxInvoiceNumber,
-      'taxInvoiceDate': getDateNow(),
-      'taxInvoiceTime': getTimeNow(),
-      'cashierOperator': config.cashierOperator,
-      'tnrAdditionalParameters': config.trnAdditionalParameters,
-      'tnrInitParameters': config.trnInitParameters,
-    };
-
-    data.addAll(config.toMap());
-    final request = await client.post(
-      '/agente/clisitef/startTransaction',
-      data: data,
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-    );
-    return StartTransactionResponse.fromMap(request.data);
   }
 
   String getDateNow() {

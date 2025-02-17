@@ -127,7 +127,11 @@ class _VendaPageState extends State<VendaPage> {
             FilledButton(
                 onPressed: () {
                   AgenteClisitef.initialize(config);
-                  AgenteClisitef.pdvPinpad.startTransaction(paymentMethod: PaymentMethod.credito, amount: amount);
+                  AgenteClisitef.pdvPinpad.startTransaction(
+                    paymentMethod: PaymentMethod.credito,
+                    amount: amount,
+                    taxInvoiceNumber: '',
+                  );
                   widget.tabController.animateTo(2);
                 },
                 child: const Text('INICIAR VENDA PINPAD')),

@@ -29,7 +29,7 @@ class PdvPinpadService {
     _paymentStatusStreamController.close();
   }
 
-  Future<void> startTransaction({required PaymentMethod paymentMethod, required double amount}) async {
+  Future<void> startTransaction({required PaymentMethod paymentMethod, required double amount, required String taxInvoiceNumber}) async {
     _isFinish = false;
     _currentTransaction = Transaction.empty();
     _updatePaymentStatus(PaymentStatus.unknow);
@@ -37,6 +37,7 @@ class PdvPinpadService {
     final startTransactionResponse = await agenteClisitefRepository.startTransaction(
       paymentMethod: paymentMethod,
       amount: amount,
+      taxInvoiceNumber: taxInvoiceNumber,
     );
     _updateTransaction(startTransactionResponse: startTransactionResponse);
 
@@ -46,9 +47,10 @@ class PdvPinpadService {
   Future<void> extornarTransacao({required Extorno extorno}) async {
     _extorno = extorno;
     final session = await agenteClisitefRepository.createSession();
-    final startTransactionResponse = await agenteClisitefRepository.startTransactionFunctions(
-      sessionId: session.sessionId,
-      functionId: 110,
+    final startTransactionResponse = await agenteClisitefRepository.startTransaction(
+      paymentMethod: FunctionId.generico,
+      sesionId: session.sessionId,
+      functionId: "110",
     );
     _updateTransaction(startTransactionResponse: startTransactionResponse);
 
