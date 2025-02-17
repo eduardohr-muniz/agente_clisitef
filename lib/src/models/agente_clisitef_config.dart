@@ -18,15 +18,6 @@ class AgenteClisitefConfig {
   /// TERMINAL
   final String terminalId;
 
-  /// CUPOM FISCAL
-  final String taxInvoiceNumber;
-
-  /// DATA FISCAL
-  final String taxInvoiceDate;
-
-  /// HORA FISCAL
-  final String taxInvoiceTime;
-
   /// OPERADOR
   final String cashierOperator;
 
@@ -41,9 +32,6 @@ class AgenteClisitefConfig {
     this.sitefIp = ' 127.0.0.1',
     this.storeId = '00000000',
     this.terminalId = 'REST0001',
-    this.taxInvoiceNumber = '1234',
-    this.taxInvoiceDate = '20180611',
-    this.taxInvoiceTime = '170000',
     this.cashierOperator = 'CAIXA',
     this.agenteIp = 'https://127.0.0.1',
     this.enableLogs = false,
@@ -58,9 +46,6 @@ class AgenteClisitefConfig {
       'sitefIp': sitefIp,
       'storeId': storeId,
       'terminalId': terminalId,
-      'taxInvoiceNumber': taxInvoiceNumber,
-      'taxInvoiceDate': taxInvoiceDate,
-      'taxInvoiceTime': taxInvoiceTime,
       'cashierOperator': cashierOperator,
     };
   }
@@ -72,9 +57,6 @@ class AgenteClisitefConfig {
       sitefIp: map['sitefIp'] ?? '',
       storeId: map['storeId'] ?? '',
       terminalId: map['terminalId'] ?? '',
-      taxInvoiceNumber: map['taxInvoiceNumber'] ?? '',
-      taxInvoiceDate: map['taxInvoiceDate'] ?? '',
-      taxInvoiceTime: map['taxInvoiceTime'] ?? '',
       cashierOperator: map['cashierOperator'] ?? '',
       agenteIp: map['agenteIp'] ?? 'https://127.0.0.1',
     );
@@ -102,9 +84,6 @@ class AgenteClisitefConfig {
       sitefIp: sitefIp ?? this.sitefIp,
       storeId: storeId ?? this.storeId,
       terminalId: terminalId ?? this.terminalId,
-      taxInvoiceNumber: taxInvoiceNumber ?? this.taxInvoiceNumber,
-      taxInvoiceDate: taxInvoiceDate ?? this.taxInvoiceDate,
-      taxInvoiceTime: taxInvoiceTime ?? this.taxInvoiceTime,
       cashierOperator: cashierOperator ?? this.cashierOperator,
       agenteIp: agenteIp ?? this.agenteIp,
     );

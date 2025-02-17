@@ -90,21 +90,21 @@ class _VendaPageState extends State<VendaPage> {
                 }),
             CTextFormField(
                 labelText: 'Cupom fiscal',
-                initialValue: config.taxInvoiceNumber,
+                initialValue: '',
                 onChanged: (value) {
                   config = config.copyWith(taxInvoiceNumber: value);
                   _savePreferences();
                 }),
             CTextFormField(
                 labelText: 'Data fiscal',
-                initialValue: config.taxInvoiceDate,
+                initialValue: '',
                 onChanged: (value) {
                   config = config.copyWith(taxInvoiceDate: value);
                   _savePreferences();
                 }),
             CTextFormField(
                 labelText: 'Hora fiscal',
-                initialValue: config.taxInvoiceTime,
+                initialValue: '',
                 onChanged: (value) {
                   config = config.copyWith(taxInvoiceTime: value);
                   _savePreferences();

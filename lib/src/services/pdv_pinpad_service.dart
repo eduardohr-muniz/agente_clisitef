@@ -122,10 +122,10 @@ class PdvPinpadService {
     await continueTransaction(continueCode: continueCode, tipoTransacao: tipoTransacao);
   }
 
-  Future<void> finishTransaction({String? taxInvoiceNumber}) async {
+  Future<void> finishTransaction() async {
     await agenteClisitefRepository.finishTransaction(
       sessionId: _currentTransaction.startTransactionResponse!.sessionId,
-      taxInvoiceNumber: taxInvoiceNumber,
+      taxInvoiceNumber: _taxInvoiceNumber,
       confirm: 1,
     );
     _updatePaymentStatus(PaymentStatus.done);
@@ -249,7 +249,7 @@ class PdvPinpadService {
   _handleFinalizarExtorno(int fieldId, int clisitefStatus) {
     if (fieldId == 0 && clisitefStatus == 0) {
       _updatePaymentStatus(PaymentStatus.sucess);
-      finishTransaction(taxInvoiceNumber: _taxInvoiceNumber);
+      finishTransaction();
     }
   }
 

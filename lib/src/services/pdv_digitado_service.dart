@@ -50,7 +50,7 @@ class PdvDigitadoService {
 
   Future<void> finishTransaction() async {
     await agenteClisitefRepository.finishTransaction(
-        sessionId: transaction.value.startTransactionResponse!.sessionId, taxInvoiceNumber: config.taxInvoiceNumber, confirm: 1);
+        sessionId: transaction.value.startTransactionResponse!.sessionId, taxInvoiceNumber: '', confirm: 1);
   }
 
   Future<void> cancelTransaction() async => await continueTransaction(continueCode: -1);
