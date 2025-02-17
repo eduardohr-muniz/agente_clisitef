@@ -19,6 +19,12 @@ class AgenteClisitefRepository implements IAgenteClisitefRepository {
     Map<String, dynamic> data = {
       'trnAmount': amount.toStringAsFixed(2),
       'functionId': paymentMethod.value,
+      'taxInvoiceNumber': config.taxInvoiceNumber,
+      'taxInvoiceDate': getDateNow(),
+      'taxInvoiceTime': getTimeNow(),
+      'cashierOperator': config.cashierOperator,
+      'tnrAdditionalParameters': config.trnAdditionalParameters,
+      'tnrInitParameters': config.trnInitParameters,
     };
 
     data.addAll(config.toMap());
