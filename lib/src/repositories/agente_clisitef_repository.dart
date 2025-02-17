@@ -6,6 +6,7 @@ import 'package:agente_clisitef/src/repositories/responses/continue_transaction_
 
 import 'package:agente_clisitef/src/repositories/responses/session_response.dart';
 import 'package:agente_clisitef/src/services/client/i_client.dart';
+import 'package:intl/intl.dart';
 
 class AgenteClisitefRepository implements IAgenteClisitefRepository {
   final IClient client;
@@ -92,13 +93,15 @@ class AgenteClisitefRepository implements IAgenteClisitefRepository {
 
   @override
   Future<StartTransactionResponse> startTransactionFunctions({required String sessionId, required int functionId}) async {
+    final date = DateFormat('ddMMyyyy').format(DateTime.now());
+    final dateHour = DateFormat('HHmmss').format(DateTime.now());
     Map<String, dynamic> data = {
       'sessionId': sessionId,
       'functionId': functionId.toString(),
       'trnAmount': '',
       'taxInvoiceNumber': config.taxInvoiceNumber,
-      'taxInvoiceDate': config.taxInvoiceDate,
-      'taxInvoiceTime': config.taxInvoiceTime,
+      'taxInvoiceDate': date,
+      'taxInvoiceTime': dateHour,
       'cashierOperator': config.cashierOperator,
       'tnrAdditionalParameters': config.trnAdditionalParameters,
       'tnrInitParameters': config.trnInitParameters,
