@@ -21,7 +21,7 @@ class PdvPinpadService {
   Transaction _currentTransaction = Transaction(cliSiTefResp: CliSiTefResp(codResult: {}));
   Transaction get currentTransaction => _currentTransaction;
   Extorno? _extorno;
-
+  String? _taxInvoiceNumber;
   bool _isFinish = false;
 
   void dispose() {
@@ -34,6 +34,7 @@ class PdvPinpadService {
     _currentTransaction = Transaction.empty();
     _updatePaymentStatus(PaymentStatus.unknow);
     _transactionStreamController.add(_currentTransaction);
+    _taxInvoiceNumber = taxInvoiceNumber;
     final startTransactionResponse = await agenteClisitefRepository.startTransaction(
       paymentMethod: paymentMethod,
       amount: amount,
@@ -46,6 +47,7 @@ class PdvPinpadService {
 
   Future<void> extornarTransacao({required Extorno extorno}) async {
     _extorno = extorno;
+    _taxInvoiceNumber == null;
     final session = await agenteClisitefRepository.createSession();
     final startTransactionResponse = await agenteClisitefRepository.startTransaction(
       paymentMethod: FunctionId.generico,
@@ -120,12 +122,10 @@ class PdvPinpadService {
     await continueTransaction(continueCode: continueCode, tipoTransacao: tipoTransacao);
   }
 
-  Future<void> finishTransaction() async {
+  Future<void> finishTransaction({String? taxInvoiceNumber}) async {
     await agenteClisitefRepository.finishTransaction(
       sessionId: _currentTransaction.startTransactionResponse!.sessionId,
-      taxInvoiceNumber: config.taxInvoiceNumber,
-      taxInvoiceDate: config.taxInvoiceDate,
-      taxInvoiceTime: config.taxInvoiceTime,
+      taxInvoiceNumber: taxInvoiceNumber,
       confirm: 1,
     );
     _updatePaymentStatus(PaymentStatus.done);
@@ -249,7 +249,7 @@ class PdvPinpadService {
   _handleFinalizarExtorno(int fieldId, int clisitefStatus) {
     if (fieldId == 0 && clisitefStatus == 0) {
       _updatePaymentStatus(PaymentStatus.sucess);
-      finishTransaction();
+      finishTransaction(taxInvoiceNumber: _taxInvoiceNumber);
     }
   }
 

@@ -9,12 +9,7 @@ abstract class IAgenteClisitefRepository {
       {required PaymentMethod paymentMethod, double? amount, String? taxInvoiceNumber, String? sesionId, String? functionId});
 
   Future<ContinueTransactionResponse?> continueTransaction({required String sessionId, required int continueCode, String? data});
-  Future<FinishTransactionResponse> finishTransaction(
-      {required String sessionId,
-      required String taxInvoiceNumber,
-      required String taxInvoiceDate,
-      required String taxInvoiceTime,
-      required int confirm});
+  Future<FinishTransactionResponse> finishTransaction({required String sessionId, String? taxInvoiceNumber, required int confirm});
   Future<SessionResponse> createSession();
   Future<SessionResponse> getSession();
   Future<void> discardSession();

@@ -56,15 +56,10 @@ class AgenteClisitefRepository implements IAgenteClisitefRepository {
   }
 
   @override
-  Future<FinishTransactionResponse> finishTransaction(
-      {required String sessionId,
-      required String taxInvoiceNumber,
-      required String taxInvoiceDate,
-      required String taxInvoiceTime,
-      required int confirm}) async {
+  Future<FinishTransactionResponse> finishTransaction({required String sessionId, String? taxInvoiceNumber, required int confirm}) async {
     Map<String, dynamic> data = {
       'sessionId': sessionId,
-      'taxInvoiceNumber': taxInvoiceNumber,
+      'taxInvoiceNumber': taxInvoiceNumber ?? '',
       'taxInvoiceDate': getDateNow(),
       'taxInvoiceTime': getTimeNow(),
       'confirm': confirm,
