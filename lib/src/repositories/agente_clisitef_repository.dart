@@ -57,8 +57,8 @@ class AgenteClisitefRepository implements IAgenteClisitefRepository {
     Map<String, dynamic> data = {
       'sessionId': sessionId,
       'taxInvoiceNumber': taxInvoiceNumber,
-      'taxInvoiceDate': taxInvoiceDate,
-      'taxInvoiceTime': taxInvoiceTime,
+      'taxInvoiceDate': getDateNow(),
+      'taxInvoiceTime': getTimeNow(),
       'confirm': confirm,
     };
 
@@ -93,15 +93,13 @@ class AgenteClisitefRepository implements IAgenteClisitefRepository {
 
   @override
   Future<StartTransactionResponse> startTransactionFunctions({required String sessionId, required int functionId}) async {
-    final date = DateFormat('ddMMyyyy').format(DateTime.now());
-    final dateHour = DateFormat('HHmmss').format(DateTime.now());
     Map<String, dynamic> data = {
       'sessionId': sessionId,
       'functionId': functionId.toString(),
       'trnAmount': '',
       'taxInvoiceNumber': config.taxInvoiceNumber,
-      'taxInvoiceDate': date,
-      'taxInvoiceTime': dateHour,
+      'taxInvoiceDate': getDateNow(),
+      'taxInvoiceTime': getTimeNow(),
       'cashierOperator': config.cashierOperator,
       'tnrAdditionalParameters': config.trnAdditionalParameters,
       'tnrInitParameters': config.trnInitParameters,
@@ -114,5 +112,15 @@ class AgenteClisitefRepository implements IAgenteClisitefRepository {
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
     );
     return StartTransactionResponse.fromMap(request.data);
+  }
+
+  String getDateNow() {
+    final date = DateFormat('ddMMyyyy').format(DateTime.now());
+    return date;
+  }
+
+  String getTimeNow() {
+    final dateHour = DateFormat('HHmmss').format(DateTime.now());
+    return dateHour;
   }
 }
