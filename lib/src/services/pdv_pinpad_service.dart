@@ -202,6 +202,11 @@ class PdvPinpadService {
         "forneca o numero do documento a ser cancelado": () async {
           await continueTransaction(continueCode: 0, data: extorno.nsuHost, tipoTransacao: TipoTransacao.extorno);
         },
+        "pix": () async {
+          final options = data.split(';');
+          final result = _onlyNumbersRgx(options.firstWhere((e) => _onlyLettersRgx(e.toLowerCase().trim()) == 'pix'));
+          await continueTransaction(continueCode: 0, data: result, tipoTransacao: TipoTransacao.extorno);
+        },
         "magnetico": () async {
           final options = data.split(';');
           final result = _onlyNumbersRgx(options.firstWhere((e) => e.toLowerCase().contains('magnetico')));
@@ -255,5 +260,9 @@ class PdvPinpadService {
 
   static String _onlyNumbersRgx(String text) {
     return text.replaceAll(RegExp(r'\D'), '');
+  }
+
+  static String _onlyLettersRgx(String text) {
+    return text.replaceAll(RegExp(r'[^a-zA-Z]'), '');
   }
 }

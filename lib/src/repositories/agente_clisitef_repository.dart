@@ -95,7 +95,7 @@ class AgenteClisitefRepository implements IAgenteClisitefRepository {
   }
 
   String getDateNow() {
-    final date = DateFormat('ddMMyyyy').format(DateTime.now());
+    final date = DateFormat('yyyyMMdd').format(DateTime.now());
     return date;
   }
 
