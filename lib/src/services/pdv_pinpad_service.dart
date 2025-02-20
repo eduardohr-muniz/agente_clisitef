@@ -1,10 +1,12 @@
 import 'dart:developer';
+import 'package:agente_clisitef/src/models/messages.dart';
 import 'package:agente_clisitef/src/repositories/responses/continue_transaction_response.dart';
 import 'package:agente_clisitef/src/repositories/responses/start_transaction_response.dart';
 import 'package:agente_clisitef/agente_clisitef.dart';
 import 'package:agente_clisitef/src/models/clisitef_resp.dart';
 import 'package:agente_clisitef/src/repositories/i_agente_clisitef_repository.dart';
 import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:intl/intl.dart';
 
@@ -23,8 +25,12 @@ class PdvPinpadService {
   Extorno? _extorno;
   String? _taxInvoiceNumber;
   bool _isFinish = false;
+  final ValueNotifier<Messages> messagesNotifier = ValueNotifier(Messages(message: '', comandEvent: CommandEvents.unknown));
+  Completer<Transaction> _transactionCompleter = Completer<Transaction>();
 
   void _reset() {
+    _transactionCompleter = Completer<Transaction>();
+    messagesNotifier.value = Messages(message: '', comandEvent: CommandEvents.unknown);
     _currentTransaction = Transaction.empty();
     _updatePaymentStatus(PaymentStatus.unknow);
     _transactionStreamController.add(_currentTransaction);
@@ -51,9 +57,10 @@ class PdvPinpadService {
     continueTransaction(continueCode: 0, tipoTransacao: TipoTransacao.venda);
   }
 
-  Future<void> extornarTransacao({required Extorno extorno}) async {
+  Future<Transaction> extornarTransacao({required Extorno extorno}) async {
     _reset();
     _extorno = extorno;
+    messagesNotifier.value = Messages(message: 'Extornando venda, aguarde...', comandEvent: CommandEvents.messageCustomer);
     _taxInvoiceNumber == null;
     final session = await agenteClisitefRepository.createSession();
     final startTransactionResponse = await agenteClisitefRepository.startTransaction(
@@ -64,6 +71,7 @@ class PdvPinpadService {
     _updateTransaction(startTransactionResponse: startTransactionResponse);
 
     continueTransaction(continueCode: 0, tipoTransacao: TipoTransacao.extorno);
+    return await _transactionCompleter.future;
   }
 
   Future<void> continueTransaction({String? data, required int continueCode, required TipoTransacao tipoTransacao}) async {
@@ -76,6 +84,7 @@ class PdvPinpadService {
       data: data?.toString() ?? '',
       continueCode: continueCode,
     );
+    _updateMessage(response: response);
 
     log('🔄 Resposta recebida - commandId: ${response?.commandId}, fieldId: ${response?.fieldId}', name: 'RESPONSE');
 
@@ -119,6 +128,7 @@ class PdvPinpadService {
       final finishFunction = _handleFinish(response.serviceMessage ?? '');
       if (finishFunction != null) {
         log('✅ Finalizando transação', name: 'FINISH');
+        _transactionCompleter.complete(_currentTransaction);
         finishFunction();
         return;
       }
@@ -137,6 +147,21 @@ class PdvPinpadService {
     );
     _updatePaymentStatus(PaymentStatus.done);
     _isFinish = true;
+  }
+
+  void _updateMessage({ContinueTransactionResponse? response}) {
+    if (response != null) {
+      final command = CommandEvents.fromCommandId(response.commandId);
+      if (command == CommandEvents.messageCashier) {
+        messagesNotifier.value = Messages(message: response.data ?? '', comandEvent: command);
+      }
+      if (command == CommandEvents.messageCustomer) {
+        messagesNotifier.value = Messages(message: response.data ?? '', comandEvent: command);
+      }
+      if (command == CommandEvents.messageCashierCustomer) {
+        messagesNotifier.value = Messages(message: response.data ?? '', comandEvent: command);
+      }
+    }
   }
 
   void _updateTransaction({ContinueTransactionResponse? response, StartTransactionResponse? startTransactionResponse}) {
@@ -226,6 +251,10 @@ class PdvPinpadService {
       "Agente nao esta esperando continua.": () {
         _isFinish = true;
         _updatePaymentStatus(PaymentStatus.unknow);
+        Future.delayed(const Duration(seconds: 2), () {
+          if (_transactionCompleter.isCompleted) return;
+          _transactionCompleter.completeError(Exception('Erro inesperado'));
+        });
       }
     };
     return map[serviceMessage];
