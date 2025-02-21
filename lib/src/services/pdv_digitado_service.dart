@@ -1,7 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:agente_clisitef/agente_clisitef.dart';
-import 'package:agente_clisitef/src/models/clisitef_resp.dart';
-
 import 'package:agente_clisitef/src/repositories/i_agente_clisitef_repository.dart';
 
 class PdvDigitadoService {
@@ -10,7 +8,7 @@ class PdvDigitadoService {
 
   PdvDigitadoService({required this.agenteClisitefRepository, required this.config});
 
-  ValueNotifier<Transaction> transaction = ValueNotifier(Transaction(cliSiTefResp: CliSiTefResp(codResult: {})));
+  ValueNotifier<Transaction> transaction = ValueNotifier(Transaction.empty());
 
   Future<void> continueTransaction({String? data, required int continueCode}) async {
     final response = await agenteClisitefRepository.continueTransaction(
@@ -41,7 +39,7 @@ class PdvDigitadoService {
   }
 
   Future startTransaction({required PaymentMethod paymentMethod, required double amount}) async {
-    transaction.value = Transaction(cliSiTefResp: CliSiTefResp(codResult: {}));
+    transaction.value = Transaction.empty();
 
     final startTransactionResponse = await agenteClisitefRepository.startTransaction(paymentMethod: paymentMethod, amount: amount);
     transaction.value = transaction.value.copyWith(startTransactionResponse: startTransactionResponse);

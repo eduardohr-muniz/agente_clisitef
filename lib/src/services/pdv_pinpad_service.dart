@@ -20,7 +20,7 @@ class PdvPinpadService {
   final _paymentStatusStreamController = StreamController<PaymentStatus>.broadcast();
   Stream<PaymentStatus> get paymentStatusStream => _paymentStatusStreamController.stream;
   Stream<Transaction> get transactionStream => _transactionStreamController.stream;
-  Transaction _currentTransaction = Transaction(cliSiTefResp: CliSiTefResp(codResult: {}));
+  Transaction _currentTransaction = Transaction.empty();
   Transaction get currentTransaction => _currentTransaction;
   Extorno? _extorno;
   String? _taxInvoiceNumber;
@@ -46,6 +46,7 @@ class PdvPinpadService {
 
   Future<void> startTransaction({required PaymentMethod paymentMethod, required double amount, required String taxInvoiceNumber}) async {
     _reset();
+    _currentTransaction = _currentTransaction.copyWith(tipoTransacao: TipoTransacao.venda);
     _taxInvoiceNumber = taxInvoiceNumber;
     final startTransactionResponse = await agenteClisitefRepository.startTransaction(
       paymentMethod: paymentMethod,
@@ -59,6 +60,7 @@ class PdvPinpadService {
 
   Future<Transaction> extornarTransacao({required Extorno extorno}) async {
     _reset();
+    _currentTransaction = _currentTransaction.copyWith(tipoTransacao: TipoTransacao.extorno);
     _extorno = extorno;
     messagesNotifier.value = Messages(message: 'Extornando venda, aguarde...', comandEvent: CommandEvents.messageCustomer);
     _taxInvoiceNumber == null;
@@ -90,11 +92,11 @@ class PdvPinpadService {
 
     await Future.delayed(const Duration(milliseconds: 500));
 
+    _updateTransaction(response: response);
+
     if (response != null) {
       // 🔹 Verifique os mapeamentos de funções
       if (tipoTransacao == TipoTransacao.venda) {
-        _updateTransaction(response: response);
-
         final map = _mapFuncTransacao(continueCode: continueCode, tipoTransacao: tipoTransacao, data: response.data)[response.commandId];
         if (map != null) {
           log('⏩ Executando função mapeada para commandId: ${response.commandId}', name: 'TRANSACTION');
@@ -243,6 +245,10 @@ class PdvPinpadService {
           final options = data.split(';');
           final result = _onlyNumbersRgx(options.firstWhere((e) => e.toLowerCase().contains('magnetico')));
           await continueTransaction(continueCode: 0, data: result, tipoTransacao: TipoTransacao.extorno);
+        },
+        "Estorno invalido": () async {
+          _transactionCompleter.completeError(Exception('Estorno invalido'));
+          _isFinish = true;
         }
       };
 
