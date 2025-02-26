@@ -234,7 +234,8 @@ class PdvPinpadService {
           await continueTransaction(continueCode: 0, data: date, tipoTransacao: TipoTransacao.extorno);
         },
         "forneca o numero do documento a ser cancelado": () async {
-          await continueTransaction(continueCode: 0, data: extorno.nsuHost, tipoTransacao: TipoTransacao.extorno);
+          final int nsuHost = int.parse(extorno.nsuHost);
+          await continueTransaction(continueCode: 0, data: nsuHost.toString(), tipoTransacao: TipoTransacao.extorno);
         },
         "pix": () async {
           final options = data.split(';');
@@ -249,6 +250,9 @@ class PdvPinpadService {
         "Estorno invalido": () async {
           _transactionCompleter.completeError(Exception('Estorno invalido'));
           _isFinish = true;
+        },
+        "Confirma Cancelamento?": () async {
+          await continueTransaction(continueCode: 0, data: '0', tipoTransacao: TipoTransacao.extorno);
         }
       };
 
