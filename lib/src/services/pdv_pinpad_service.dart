@@ -22,7 +22,7 @@ class PdvPinpadService {
   Stream<Transaction> get transactionStream => _transactionStreamController.stream;
   Transaction _currentTransaction = Transaction.empty();
   Transaction get currentTransaction => _currentTransaction;
-  Extorno? _extorno;
+  Estorno? _estorno;
   String? _taxInvoiceNumber;
   bool _isFinish = false;
   final ValueNotifier<Messages> messagesNotifier = ValueNotifier(Messages(message: '', comandEvent: CommandEvents.unknown));
@@ -34,7 +34,7 @@ class PdvPinpadService {
     _currentTransaction = Transaction.empty();
     _updatePaymentStatus(PaymentStatus.unknow);
     _transactionStreamController.add(_currentTransaction);
-    _extorno = null;
+    _estorno = null;
     _taxInvoiceNumber = null;
     _isFinish = false;
   }
@@ -58,10 +58,10 @@ class PdvPinpadService {
     continueTransaction(continueCode: 0, tipoTransacao: TipoTransacao.venda);
   }
 
-  Future<Transaction> extornarTransacao({required Extorno extorno}) async {
+  Future<Transaction> extornarTransacao({required Estorno estorno}) async {
     _reset();
-    _currentTransaction = _currentTransaction.copyWith(tipoTransacao: TipoTransacao.extorno);
-    _extorno = extorno;
+    _currentTransaction = _currentTransaction.copyWith(tipoTransacao: TipoTransacao.estorno);
+    _estorno = estorno;
     messagesNotifier.value = Messages(message: 'Extornando venda, aguarde...', comandEvent: CommandEvents.messageCustomer);
     _taxInvoiceNumber == null;
     final session = await agenteClisitefRepository.createSession();
@@ -72,7 +72,7 @@ class PdvPinpadService {
     );
     _updateTransaction(startTransactionResponse: startTransactionResponse);
 
-    continueTransaction(continueCode: 0, tipoTransacao: TipoTransacao.extorno);
+    continueTransaction(continueCode: 0, tipoTransacao: TipoTransacao.estorno);
     return await _transactionCompleter.future;
   }
 
@@ -116,21 +116,27 @@ class PdvPinpadService {
       }
 
       // 🔹 Verifique se há um cancelamento
-      if (tipoTransacao == TipoTransacao.extorno) {
+      if (tipoTransacao == TipoTransacao.estorno) {
+        if (response.fieldId == 121) {
+          Future.delayed(const Duration(seconds: 3), () {
+            if (_transactionCompleter.isCompleted == false) {
+              _handleFinalizarEstorno(response.fieldId, response.clisitefStatus);
+            }
+          });
+        }
         final func = _mapFuncCancelarContains(response.data ?? '');
         if (func != null) {
           log('⏩ Executando função de cancelamento', name: 'CANCEL');
           await func();
           return;
         }
-        _handleFinalizarExtorno(response.fieldId, response.clisitefStatus);
+        _handleFinalizarEstorno(response.fieldId, response.clisitefStatus);
       }
 
       // 🔹 Verifique se deve finalizar
       final finishFunction = _handleFinish(response.serviceMessage ?? '');
       if (finishFunction != null) {
         log('✅ Finalizando transação', name: 'FINISH');
-        _transactionCompleter.complete(_currentTransaction);
         finishFunction();
         return;
       }
@@ -149,6 +155,8 @@ class PdvPinpadService {
     );
     _updatePaymentStatus(PaymentStatus.done);
     _isFinish = true;
+    if (_transactionCompleter.isCompleted) return;
+    _transactionCompleter.complete(_currentTransaction);
   }
 
   void _updateMessage({ContinueTransactionResponse? response}) {
@@ -196,63 +204,71 @@ class PdvPinpadService {
   Future<void> cancelTransaction() async => await continueTransaction(continueCode: -1, tipoTransacao: TipoTransacao.venda);
 
   Future<void> Function()? _mapFuncCancelarContains(String data) {
-    final key = _mapFuncCancelarTransacao(data: data.trim(), extorno: _extorno!)
+    final key = _mapFuncCancelarTransacao(data: data.trim().toLowerCase(), estorno: _estorno!)
         .keys
         .firstWhere((k) => data.toLowerCase().trim().contains(k.toLowerCase().trim()), orElse: () => '');
     if (key.isNotEmpty) {
-      return _mapFuncCancelarTransacao(data: data, extorno: _extorno!)[key]!;
+      return _mapFuncCancelarTransacao(data: data, estorno: _estorno!)[key]!;
     }
     return null;
   }
 
-  Map<String, Future<void> Function()> _mapFuncCancelarTransacao({required String data, required Extorno extorno}) => {
+  Map<String, Future<void> Function()> _mapFuncCancelarTransacao({required String data, required Estorno estorno}) => {
         "cancelamento de transacao": () async {
           final options = data.split(';');
           final result = _onlyNumbersRgx(options.firstWhere((e) => e.toLowerCase().contains('cancelamento de transacao')));
-          await continueTransaction(continueCode: 0, data: result, tipoTransacao: TipoTransacao.extorno);
+          await continueTransaction(continueCode: 0, data: result, tipoTransacao: TipoTransacao.estorno);
         },
         "forneca o codigo do superviso": () async {
-          await continueTransaction(continueCode: 0, tipoTransacao: TipoTransacao.extorno);
+          await continueTransaction(continueCode: 0, tipoTransacao: TipoTransacao.estorno);
         },
         "cancelamento de Cartao de Credito": () async {
           final options = data.split(';');
-          final result = switch (extorno.paymentMethod) {
+          final result = switch (estorno.paymentMethod) {
             FunctionId.debito => _onlyNumbersRgx(options.firstWhere((e) => e.toLowerCase().contains('debito'))),
             FunctionId.credito => _onlyNumbersRgx(options.firstWhere((e) => e.toLowerCase().contains('credito'))),
             FunctionId.vendaCarteiraDigital => _onlyNumbersRgx(options.firstWhere((e) => e.toLowerCase().contains('carteira digital'))),
             _ => '2',
           };
-          await continueTransaction(continueCode: 0, data: result, tipoTransacao: TipoTransacao.extorno);
+          await continueTransaction(continueCode: 0, data: result, tipoTransacao: TipoTransacao.estorno);
         },
         "valor da transacao": () async {
-          log('amount: ${extorno.amount}', name: 'valor da transacao');
-          String amount = extorno.amount.toStringAsFixed(2).replaceAll('.', '');
-          await continueTransaction(continueCode: 0, data: amount, tipoTransacao: TipoTransacao.extorno);
+          log('amount: ${estorno.amount}', name: 'valor da transacao');
+          String amount = estorno.amount.toStringAsFixed(2).replaceAll('.', '');
+          await continueTransaction(continueCode: 0, data: amount, tipoTransacao: TipoTransacao.estorno);
         },
         "data da transacao": () async {
-          String date = DateFormat('ddMMyyyy').format(extorno.data);
-          await continueTransaction(continueCode: 0, data: date, tipoTransacao: TipoTransacao.extorno);
+          String date = DateFormat('ddMMyyyy').format(estorno.data);
+          await continueTransaction(continueCode: 0, data: date, tipoTransacao: TipoTransacao.estorno);
         },
         "forneca o numero do documento a ser cancelado": () async {
-          final int nsuHost = int.parse(extorno.nsuHost);
-          await continueTransaction(continueCode: 0, data: nsuHost.toString(), tipoTransacao: TipoTransacao.extorno);
+          final int nsuHost = int.parse(estorno.nsuHost);
+          await continueTransaction(continueCode: 0, data: nsuHost.toString(), tipoTransacao: TipoTransacao.estorno);
         },
         "pix": () async {
           final options = data.split(';');
           final result = _onlyNumbersRgx(options.firstWhere((e) => _onlyLettersRgx(e.toLowerCase().trim()) == 'pix'));
-          await continueTransaction(continueCode: 0, data: result, tipoTransacao: TipoTransacao.extorno);
+          await continueTransaction(continueCode: 0, data: result, tipoTransacao: TipoTransacao.estorno);
         },
         "magnetico": () async {
           final options = data.split(';');
           final result = _onlyNumbersRgx(options.firstWhere((e) => e.toLowerCase().contains('magnetico')));
-          await continueTransaction(continueCode: 0, data: result, tipoTransacao: TipoTransacao.extorno);
+          await continueTransaction(continueCode: 0, data: result, tipoTransacao: TipoTransacao.estorno);
         },
         "Estorno invalido": () async {
           _transactionCompleter.completeError(Exception('Estorno invalido'));
           _isFinish = true;
         },
+        "ERRO": () async {
+          _transactionCompleter.completeError(Exception(data));
+          _isFinish = true;
+        },
+        "Transacao nao aceita": () async {
+          _transactionCompleter.completeError(Exception(data));
+          _isFinish = true;
+        },
         "Confirma Cancelamento?": () async {
-          await continueTransaction(continueCode: 0, data: '0', tipoTransacao: TipoTransacao.extorno);
+          await continueTransaction(continueCode: 0, data: '0', tipoTransacao: TipoTransacao.estorno);
         }
       };
 
@@ -297,7 +313,7 @@ class PdvPinpadService {
     return null;
   }
 
-  _handleFinalizarExtorno(int fieldId, int clisitefStatus) {
+  _handleFinalizarEstorno(int fieldId, int clisitefStatus) {
     if (fieldId == 0 && clisitefStatus == 0) {
       _updatePaymentStatus(PaymentStatus.sucess);
       finishTransaction();
