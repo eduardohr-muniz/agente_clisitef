@@ -3,7 +3,6 @@ import 'package:agente_clisitef/src/models/messages.dart';
 import 'package:agente_clisitef/src/repositories/responses/continue_transaction_response.dart';
 import 'package:agente_clisitef/src/repositories/responses/start_transaction_response.dart';
 import 'package:agente_clisitef/agente_clisitef.dart';
-import 'package:agente_clisitef/src/models/clisitef_resp.dart';
 import 'package:agente_clisitef/src/repositories/i_agente_clisitef_repository.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
@@ -86,6 +85,7 @@ class PdvPinpadService {
       data: data?.toString() ?? '',
       continueCode: continueCode,
     );
+
     _updateMessage(response: response);
 
     log('🔄 Resposta recebida - commandId: ${response?.commandId}, fieldId: ${response?.fieldId}', name: 'RESPONSE');
@@ -93,6 +93,13 @@ class PdvPinpadService {
     // await Future.delayed(const Duration(milliseconds: 500));
 
     _updateTransaction(response: response);
+
+    if (continueCode == -1) {
+      final func = _handleFinish('-1');
+      if (func != null) {
+        return func();
+      }
+    }
 
     if (response != null) {
       // 🔹 Verifique os mapeamentos de funções
@@ -279,7 +286,15 @@ class PdvPinpadService {
           if (_transactionCompleter.isCompleted) return;
           _transactionCompleter.completeError(Exception('Erro inesperado'));
         });
-      }
+      },
+      "-1": () {
+        _isFinish = true;
+        _updatePaymentStatus(PaymentStatus.unknow);
+        Future.delayed(const Duration(seconds: 2), () {
+          if (_transactionCompleter.isCompleted) return;
+          _transactionCompleter.completeError(Exception('Erro inesperado'));
+        });
+      },
     };
     return map[serviceMessage];
   }
