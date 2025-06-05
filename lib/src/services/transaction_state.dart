@@ -4,7 +4,6 @@ import 'package:agente_clisitef/src/models/payment_status.dart';
 import 'package:agente_clisitef/src/models/transaction.dart';
 import 'package:agente_clisitef/src/models/refund.dart';
 import 'package:flutter/foundation.dart';
-import 'package:agente_clisitef/src/exceptions/agent_clisitef_exception.dart';
 import 'package:agente_clisitef/src/models/clisitef_resp.dart';
 import 'package:agente_clisitef/src/enums/tipo_transacao.dart';
 import 'package:agente_clisitef/src/models/data_events.dart';
@@ -28,6 +27,7 @@ class TransactionState {
   bool get isFinish => _isFinish;
   String get taxInvoiceNumber => _taxInvoiceNumber;
   ValueNotifier<Messages> get messagesNotifier => _messagesNotifier;
+  Refund? get refund => _refund;
 
   /// Reseta o estado da transação
   void reset() {

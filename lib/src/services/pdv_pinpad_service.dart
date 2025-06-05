@@ -1,6 +1,5 @@
 import 'package:agente_clisitef/src/models/messages.dart';
 import 'package:agente_clisitef/src/repositories/responses/continue_transaction_response.dart';
-import 'package:agente_clisitef/src/repositories/responses/start_transaction_response.dart';
 import 'package:agente_clisitef/agente_clisitef.dart';
 import 'package:agente_clisitef/src/repositories/i_agente_clisitef_repository.dart';
 import 'package:flutter/foundation.dart';
@@ -8,14 +7,7 @@ import 'dart:async';
 import 'package:agente_clisitef/src/services/mappers/transaction_mappers.dart';
 import 'package:agente_clisitef/src/services/transaction_state.dart';
 import 'package:agente_clisitef/src/models/refund.dart';
-import 'package:agente_clisitef/src/models/payment_status.dart';
-import 'package:agente_clisitef/src/enums/function_id.dart';
-import 'package:agente_clisitef/src/enums/tipo_transacao.dart';
-import 'package:agente_clisitef/src/services/mappers/transaction_mappers.dart';
-import 'package:agente_clisitef/src/exceptions/agent_clisitef_exception.dart';
 import 'package:agente_clisitef/src/models/clisitef_resp.dart';
-import 'package:agente_clisitef/src/models/data_events.dart';
-import 'package:agente_clisitef/src/models/comand_events.dart';
 
 /// Código padrão para início de transação
 const int kDefaultContinueCode = 0;
@@ -187,7 +179,11 @@ class PdvPinpadService {
       }
     }
 
-    await continueTransaction(continueCode: continueCode, tipoTransacao: tipoTransacao);
+    // Continua a transação com o mesmo código e tipo
+    await continueTransaction(
+      continueCode: continueCode,
+      tipoTransacao: tipoTransacao,
+    );
   }
 
   Future<void> finishTransaction() async {
@@ -245,11 +241,9 @@ class PdvPinpadService {
         paymentMethod: FunctionId.generico,
       );
 
-      // TODO: Ajustar para obter o data correto do fluxo real
       const data = '';
 
-      final dataLower = data.toLowerCase();
-      final mappedFunction = TransactionMappers.mapFuncCancelarTransacaoSimple(dataLower);
+      final mappedFunction = TransactionMappers.mapFuncCancelarTransacaoSimple(data.toLowerCase());
 
       if (mappedFunction.isNotEmpty) {
         await _repository.continueTransaction(
@@ -258,25 +252,33 @@ class PdvPinpadService {
           data: data,
         );
       }
-    } catch (e, stack) {
-      // TODO: Integrar com serviço de log se necessário
+    } catch (e) {
       updatePaymentStatus(PaymentStatus.error);
-      // print('Erro ao cancelar transação: $e\n$stack');
+
       rethrow;
     }
   }
 
   Future<void> Function()? _mapFuncCancelarContains(String data) {
-    final dataLower = data.trim().toLowerCase();
-    final mappedFunction = TransactionMappers.mapFuncCancelarTransacaoSimple(dataLower);
-    if (mappedFunction.isNotEmpty) {
-      return () async {
+    final mappedFunction = TransactionMappers.mapFuncCancelarTransacao(
+      data: data,
+      refund: _state.refund!,
+      continueTransaction: (code, data) async {
         await continueTransaction(
-          continueCode: 0,
+          continueCode: code,
           data: data,
           tipoTransacao: TipoTransacao.estorno,
         );
-      };
+      },
+      completeError: (error) {
+        _state.completeError(error);
+      },
+      setIsFinish: () {
+        _state.setFinish(true);
+      },
+    );
+    if (mappedFunction.isNotEmpty) {
+      return mappedFunction.values.first;
     }
     return null;
   }
