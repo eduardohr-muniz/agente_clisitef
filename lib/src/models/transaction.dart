@@ -1,8 +1,5 @@
 import 'package:agente_clisitef/agente_clisitef.dart';
 import 'package:agente_clisitef/src/models/clisitef_resp.dart';
-import 'package:agente_clisitef/src/models/comand_events.dart';
-import 'package:agente_clisitef/src/models/data_events.dart';
-import 'package:agente_clisitef/src/models/payment_status.dart';
 import 'package:agente_clisitef/src/repositories/responses/start_transaction_response.dart';
 
 class Transaction {
