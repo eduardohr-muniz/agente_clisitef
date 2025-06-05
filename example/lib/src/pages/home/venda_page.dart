@@ -128,9 +128,10 @@ class _VendaPageState extends State<VendaPage> {
                 onPressed: () {
                   AgenteClisitef.initialize(config);
                   AgenteClisitef.pdvPinpad.startTransaction(
-                    paymentMethod: PaymentMethod.credito,
+                    functionId: FunctionId.credito,
                     amount: amount,
-                    taxInvoiceNumber: '',
+                    tipoTransacao: TipoTransacao.venda,
+                    updatePaymentStatus: (status) {},
                   );
                   widget.tabController.animateTo(2);
                 },

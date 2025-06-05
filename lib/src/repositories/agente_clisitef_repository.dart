@@ -8,15 +8,25 @@ import 'package:agente_clisitef/src/repositories/responses/session_response.dart
 import 'package:agente_clisitef/src/services/client/i_client.dart';
 import 'package:intl/intl.dart';
 
+/// Implementação do repositório de integração com o TEF.
+/// Responsável por realizar as chamadas HTTP para o backend.
 class AgenteClisitefRepository implements IAgenteClisitefRepository {
   final IClient client;
+
+  /// Cria uma instância do repositório.
   AgenteClisitefRepository({required this.client});
 
+  /// Retorna a configuração global do TEF.
   AgenteClisitefConfig get config => AgenteClisitef.config;
 
   @override
-  Future<StartTransactionResponse> startTransaction(
-      {required PaymentMethod paymentMethod, double? amount, String? taxInvoiceNumber, String? sesionId, String? functionId}) async {
+  Future<StartTransactionResponse> startTransaction({
+    required PaymentMethod paymentMethod,
+    double? amount,
+    String? taxInvoiceNumber,
+    String? sesionId,
+    String? functionId,
+  }) async {
     Map<String, dynamic> data = {
       'trnAmount': amount?.toStringAsFixed(2) ?? '',
       'functionId': functionId ?? paymentMethod.value,
@@ -39,7 +49,11 @@ class AgenteClisitefRepository implements IAgenteClisitefRepository {
   }
 
   @override
-  Future<ContinueTransactionResponse?> continueTransaction({required String sessionId, required int continueCode, String? data}) async {
+  Future<ContinueTransactionResponse?> continueTransaction({
+    required String sessionId,
+    required int continueCode,
+    String? data,
+  }) async {
     Map<String, dynamic> params = {
       'sessionId': sessionId,
       'data': data,
@@ -56,7 +70,11 @@ class AgenteClisitefRepository implements IAgenteClisitefRepository {
   }
 
   @override
-  Future<FinishTransactionResponse> finishTransaction({required String sessionId, String? taxInvoiceNumber, required int confirm}) async {
+  Future<FinishTransactionResponse> finishTransaction({
+    required String sessionId,
+    String? taxInvoiceNumber,
+    required int confirm,
+  }) async {
     Map<String, dynamic> data = {
       'sessionId': sessionId,
       'taxInvoiceNumber': taxInvoiceNumber ?? '',
@@ -94,11 +112,13 @@ class AgenteClisitefRepository implements IAgenteClisitefRepository {
     await client.delete('/agente/clisitef/session');
   }
 
+  /// Retorna a data atual no formato yyyyMMdd.
   String getDateNow() {
     final date = DateFormat('yyyyMMdd').format(DateTime.now());
     return date;
   }
 
+  /// Retorna a hora atual no formato HHmmss.
   String getTimeNow() {
     final dateHour = DateFormat('HHmmss').format(DateTime.now());
     return dateHour;

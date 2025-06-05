@@ -56,7 +56,7 @@ class AgenteClisitef {
   }
 
   static PdvPinpadService get pdvPinpad {
-    return _pdvPinpadService ??= PdvPinpadService(agenteClisitefRepository: instance, config: config);
+    return _pdvPinpadService ??= PdvPinpadService(repository: instance);
   }
 
   static PdvDigitadoService get pdvDigitado {

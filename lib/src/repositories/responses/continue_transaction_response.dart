@@ -1,15 +1,35 @@
 import 'dart:convert';
 
+/// Modelo que representa a resposta de continuação de transação do backend TEF.
 class ContinueTransactionResponse {
+  /// ID da sessão em andamento.
   final String sessionId;
+
+  /// Dados retornados pelo backend (opcional).
   final String? data;
+
+  /// Tamanho mínimo do campo de entrada.
   final int fieldMinLength;
+
+  /// ID do campo atual.
   final int fieldId;
+
+  /// Status do serviço (0 = sucesso).
   final int serviceStatus;
+
+  /// Status do CliSiTef (0 = sucesso).
   final int clisitefStatus;
+
+  /// ID do comando atual.
   final int commandId;
+
+  /// Tamanho máximo do campo de entrada.
   final int fieldMaxLength;
+
+  /// Mensagem de serviço (opcional).
   final String? serviceMessage;
+
+  /// Cria uma instância de resposta de continuação de transação.
   ContinueTransactionResponse({
     required this.sessionId,
     this.data,
@@ -22,6 +42,7 @@ class ContinueTransactionResponse {
     this.serviceMessage,
   });
 
+  /// Converte a resposta para um mapa.
   Map<String, dynamic> toMap() {
     return {
       'sessionId': sessionId,
@@ -36,6 +57,7 @@ class ContinueTransactionResponse {
     };
   }
 
+  /// Cria uma instância a partir de um mapa.
   factory ContinueTransactionResponse.fromMap(Map<String, dynamic> map) {
     return ContinueTransactionResponse(
       sessionId: map['sessionId'] ?? '',
@@ -50,7 +72,9 @@ class ContinueTransactionResponse {
     );
   }
 
+  /// Converte a resposta para JSON.
   String toJson() => json.encode(toMap());
 
+  /// Cria uma instância a partir de uma string JSON.
   factory ContinueTransactionResponse.fromJson(String source) => ContinueTransactionResponse.fromMap(json.decode(source));
 }

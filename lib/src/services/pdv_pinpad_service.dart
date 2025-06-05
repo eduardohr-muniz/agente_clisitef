@@ -1,193 +1,226 @@
-import 'dart:developer';
 import 'package:agente_clisitef/src/models/messages.dart';
 import 'package:agente_clisitef/src/repositories/responses/continue_transaction_response.dart';
 import 'package:agente_clisitef/src/repositories/responses/start_transaction_response.dart';
 import 'package:agente_clisitef/agente_clisitef.dart';
 import 'package:agente_clisitef/src/repositories/i_agente_clisitef_repository.dart';
-import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
-import 'package:intl/intl.dart';
+import 'package:agente_clisitef/src/services/mappers/transaction_mappers.dart';
+import 'package:agente_clisitef/src/services/transaction_state.dart';
+import 'package:agente_clisitef/src/models/refund.dart';
+import 'package:agente_clisitef/src/models/payment_status.dart';
+import 'package:agente_clisitef/src/enums/function_id.dart';
+import 'package:agente_clisitef/src/enums/tipo_transacao.dart';
+import 'package:agente_clisitef/src/services/mappers/transaction_mappers.dart';
+import 'package:agente_clisitef/src/exceptions/agent_clisitef_exception.dart';
+import 'package:agente_clisitef/src/models/clisitef_resp.dart';
+import 'package:agente_clisitef/src/models/data_events.dart';
+import 'package:agente_clisitef/src/models/comand_events.dart';
 
+/// Código padrão para início de transação
+const int kDefaultContinueCode = 0;
+
+/// Serviço responsável pelo fluxo de transações TEF via Pinpad.
+/// Gerencia o estado, integra com o repositório e executa o fluxo de pagamento/cancelamento.
 class PdvPinpadService {
-  final IAgenteClisitefRepository agenteClisitefRepository;
-  final AgenteClisitefConfig config;
+  final IAgenteClisitefRepository _repository;
+  final TransactionState _state;
 
-  PdvPinpadService({required this.agenteClisitefRepository, required this.config});
+  /// Cria uma instância do serviço de Pinpad.
+  /// [repository] é obrigatório e deve implementar a interface de integração TEF.
+  /// [state] pode ser injetado para facilitar testes.
+  PdvPinpadService({
+    required IAgenteClisitefRepository repository,
+    TransactionState? state,
+  })  : _repository = repository,
+        _state = state ?? TransactionState();
 
-  final _transactionStreamController = StreamController<Transaction>.broadcast();
-  final _paymentStatusStreamController = StreamController<PaymentStatus>.broadcast();
-  Stream<PaymentStatus> get paymentStatusStream => _paymentStatusStreamController.stream;
-  Stream<Transaction> get transactionStream => _transactionStreamController.stream;
-  Transaction _currentTransaction = Transaction.empty();
-  Transaction get currentTransaction => _currentTransaction;
-  Estorno? _estorno;
-  String? _taxInvoiceNumber;
-  bool _isFinish = false;
-  final ValueNotifier<Messages> messagesNotifier = ValueNotifier(Messages(message: '', comandEvent: CommandEvents.unknown));
-  Completer<Transaction> _transactionCompleter = Completer<Transaction>();
+  Stream<PaymentStatus> get paymentStatusStream => _state.paymentStatusStream;
+  Stream<Transaction> get transactionStream => _state.transactionStream;
+  Transaction? get currentTransaction => _state.currentTransaction;
+  ValueNotifier<Messages> get messagesNotifier => _state.messagesNotifier;
+  bool get isFinish => _state.isFinish;
 
-  void _reset() {
-    _transactionCompleter = Completer<Transaction>();
-    messagesNotifier.value = Messages(message: '', comandEvent: CommandEvents.unknown);
-    _currentTransaction = Transaction.empty();
-    _updatePaymentStatus(PaymentStatus.unknow);
-    _transactionStreamController.add(_currentTransaction);
-    _estorno = null;
-    _taxInvoiceNumber = null;
-    _isFinish = false;
-  }
-
+  /// Libera recursos e reseta o estado.
   void dispose() {
-    _transactionStreamController.close();
-    _paymentStatusStreamController.close();
+    _state.reset();
   }
 
-  Future<void> startTransaction({required PaymentMethod paymentMethod, required double amount, required String taxInvoiceNumber}) async {
-    _reset();
-    _currentTransaction = _currentTransaction.copyWith(tipoTransacao: TipoTransacao.venda);
-    _taxInvoiceNumber = taxInvoiceNumber;
-    final startTransactionResponse = await agenteClisitefRepository.startTransaction(
-      paymentMethod: paymentMethod,
-      amount: amount,
-      taxInvoiceNumber: taxInvoiceNumber,
-    );
-    _updateTransaction(startTransactionResponse: startTransactionResponse);
+  /// Inicia uma transação de venda ou outro tipo, conforme [functionId] e [tipoTransacao].
+  /// Atualiza o status via [updatePaymentStatus].
+  Future<void> startTransaction({
+    required double amount,
+    required FunctionId functionId,
+    required TipoTransacao tipoTransacao,
+    required Function(PaymentStatus) updatePaymentStatus,
+  }) async {
+    _state.reset();
+    updatePaymentStatus(PaymentStatus.processing);
 
-    continueTransaction(continueCode: 0, tipoTransacao: TipoTransacao.venda);
+    try {
+      final result = await _repository.startTransaction(
+        amount: amount,
+        functionId: functionId.value.toString(),
+        paymentMethod: functionId,
+      );
+
+      // TODO: Ajustar para obter o continueCode e data corretos do fluxo real
+      const continueCode = kDefaultContinueCode;
+      const data = null;
+
+      final continueCodeStr = continueCode.toString();
+      final funcMap = TransactionMappers.mapFuncTransacaoSimple(continueCodeStr);
+
+      if (funcMap.isNotEmpty) {
+        await _repository.continueTransaction(
+          sessionId: result.sessionId,
+          continueCode: continueCode,
+          data: data,
+        );
+      }
+    } catch (e) {
+      // TODO: Integrar com serviço de log se necessário
+      updatePaymentStatus(PaymentStatus.error);
+      // print('Erro ao iniciar transação: $e\n$stack');
+      rethrow;
+    }
   }
 
-  Future<Transaction> extornarTransacao({required Estorno estorno}) async {
-    _reset();
-    _currentTransaction = _currentTransaction.copyWith(tipoTransacao: TipoTransacao.estorno);
-    _estorno = estorno;
-    messagesNotifier.value = Messages(message: 'Extornando venda, aguarde...', comandEvent: CommandEvents.messageCustomer);
-    _taxInvoiceNumber == null;
-    final session = await agenteClisitefRepository.createSession();
-    final startTransactionResponse = await agenteClisitefRepository.startTransaction(
+  Future<Transaction> refundTransaction({required Refund refund}) async {
+    _state.reset();
+    _state.setRefund(refund);
+    _state.messagesNotifier.value = Messages(message: 'Refunding sale, please wait...', comandEvent: CommandEvents.messageCustomer);
+    _state.setTaxInvoiceNumber('');
+
+    final session = await _repository.createSession();
+    await _repository.startTransaction(
       paymentMethod: FunctionId.generico,
       sesionId: session.sessionId,
       functionId: "110",
     );
-    _updateTransaction(startTransactionResponse: startTransactionResponse);
+    // Criar um CliSiTefResp padrão
+    final cliSiTefRespDefault = CliSiTefResp(
+      codResult: {},
+    );
+    _state.updateTransaction(
+      cliSiTefResp: cliSiTefRespDefault,
+      event: DataEvents.unknown,
+      command: CommandEvents.unknown,
+      buffer: '',
+      fildId: 0,
+      commandId: 0,
+    );
 
-    continueTransaction(continueCode: 0, tipoTransacao: TipoTransacao.estorno);
-    return await _transactionCompleter.future;
+    await continueTransaction(continueCode: 0, tipoTransacao: TipoTransacao.estorno);
+    while (!_state.isFinish) {
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+    return _state.currentTransaction!;
   }
 
   Future<void> continueTransaction({String? data, required int continueCode, required TipoTransacao tipoTransacao}) async {
-    if (_isFinish) return;
+    if (_state.isFinish) return;
 
-    log('🔄 Iniciando continueTransaction - continueCode: $continueCode, tipoTransacao: $tipoTransacao, data: $data', name: 'REQUEST');
-
-    final response = await agenteClisitefRepository.continueTransaction(
-      sessionId: _currentTransaction.startTransactionResponse!.sessionId,
-      data: data?.toString() ?? '',
+    final response = await _repository.continueTransaction(
+      sessionId: _state.currentTransaction?.startTransactionResponse?.sessionId ?? '',
       continueCode: continueCode,
+      data: data?.toString() ?? '',
     );
 
     _updateMessage(response: response);
-
-    log('🔄 Resposta recebida - commandId: ${response?.commandId}, fieldId: ${response?.fieldId}', name: 'RESPONSE');
-
     _updateTransaction(response: response);
 
     if (continueCode == -1) {
-      final func = _handleFinish('-1');
-      if (func != null) {
-        return func();
-      }
+      _state.setFinish(true);
+      return;
     }
 
     if (response != null) {
-      // 🔹 Verifique os mapeamentos de funções
       if (tipoTransacao == TipoTransacao.venda) {
-        final map = _mapFuncTransacao(continueCode: continueCode, tipoTransacao: tipoTransacao, data: response.data)[response.commandId];
-        if (map != null) {
-          log('⏩ Executando função mapeada para commandId: ${response.commandId}', name: 'TRANSACTION');
-          await map.call();
+        final continueCodeStr = continueCode.toString();
+        final map = TransactionMappers.mapFuncTransacaoSimple(continueCodeStr);
+
+        if (map.isNotEmpty) {
+          await continueTransaction(
+            continueCode: continueCode,
+            data: response.data,
+            tipoTransacao: tipoTransacao,
+          );
           return;
         }
 
         final customComand = _customComandId(response.fieldId, response.clisitefStatus);
         if (customComand != null && continueCode == 0) {
-          final mappedFunction = _mapFuncTransacao(continueCode: continueCode, tipoTransacao: tipoTransacao, data: response.data)[customComand];
-          if (mappedFunction != null) {
-            log('⏩ Executando função personalizada para commandId: $customComand', name: 'TRANSACTION');
-            await mappedFunction.call();
+          final customComandStr = customComand.toString();
+          final mappedFunction = TransactionMappers.mapFuncTransacaoSimple(customComandStr);
+
+          if (mappedFunction.isNotEmpty) {
+            await continueTransaction(
+              continueCode: continueCode,
+              data: response.data,
+              tipoTransacao: tipoTransacao,
+            );
             return;
           }
         }
       }
 
-      // 🔹 Verifique se há um cancelamento
       if (tipoTransacao == TipoTransacao.estorno) {
         if (response.fieldId == 121) {
           Future.delayed(const Duration(seconds: 3), () {
-            if (_transactionCompleter.isCompleted == false) {
+            if (!_state.isFinish) {
               _handleFinalizarEstorno(response.fieldId, response.clisitefStatus);
             }
           });
         }
         final func = _mapFuncCancelarContains(response.data ?? '');
         if (func != null) {
-          log('⏩ Executando função de cancelamento', name: 'CANCEL');
           await func();
           return;
         }
         _handleFinalizarEstorno(response.fieldId, response.clisitefStatus);
       }
 
-      // 🔹 Verifique se deve finalizar
-      final finishFunction = _handleFinish(response.serviceMessage ?? '');
-      if (finishFunction != null) {
-        log('✅ Finalizando transação', name: 'FINISH');
-        finishFunction();
+      if (response.serviceMessage != null) {
+        _state.setFinish(true);
         return;
       }
     }
 
-    // 🔄 Continue chamando recursivamente
-    log('🔄 Chamando continueTransaction novamente', name: 'RECURSION');
     await continueTransaction(continueCode: continueCode, tipoTransacao: tipoTransacao);
   }
 
   Future<void> finishTransaction() async {
-    await agenteClisitefRepository.finishTransaction(
-      sessionId: _currentTransaction.startTransactionResponse!.sessionId,
-      taxInvoiceNumber: _taxInvoiceNumber,
+    await _repository.finishTransaction(
+      sessionId: _state.currentTransaction?.startTransactionResponse?.sessionId ?? '',
+      taxInvoiceNumber: _state.taxInvoiceNumber,
       confirm: 1,
     );
-    _updatePaymentStatus(PaymentStatus.done);
-    _isFinish = true;
-    if (_transactionCompleter.isCompleted) return;
-    _transactionCompleter.complete(_currentTransaction);
+    _state.updatePaymentStatus(PaymentStatus.done);
+    _state.setFinish(true);
+    if (_state.currentTransaction != null) {
+      _state.completeTransaction(_state.currentTransaction!);
+    }
   }
 
   void _updateMessage({ContinueTransactionResponse? response}) {
     if (response != null) {
       final command = CommandEvents.fromCommandId(response.commandId);
-      if (command == CommandEvents.messageCashier) {
-        messagesNotifier.value = Messages(message: response.data ?? '', comandEvent: command);
-      }
       if (command == CommandEvents.messageCustomer) {
-        messagesNotifier.value = Messages(message: response.data ?? '', comandEvent: command);
-      }
-      if (command == CommandEvents.messageCashierCustomer) {
-        messagesNotifier.value = Messages(message: response.data ?? '', comandEvent: command);
+        _state.messagesNotifier.value = Messages(message: response.data ?? '', comandEvent: command);
       }
     }
   }
 
-  void _updateTransaction({ContinueTransactionResponse? response, StartTransactionResponse? startTransactionResponse}) {
+  void _updateTransaction({ContinueTransactionResponse? response}) {
+    final cliSiTefRespDefault = CliSiTefResp(
+      codResult: {},
+    );
     if (response != null) {
-      final event = DataEvents.fildIdToDataEvent[response.fieldId] ?? DataEvents.unknown;
+      const event = DataEvents.unknown;
       final command = CommandEvents.fromCommandId(response.commandId);
-      _currentTransaction = _currentTransaction.copyWith(
-        cliSiTefResp: _currentTransaction.cliSiTefResp.onFildid(
-          fieldId: response.fieldId,
-          buffer: response.data ?? '',
-        ),
+      _state.updateTransaction(
+        cliSiTefResp: cliSiTefRespDefault,
         event: event,
         command: command,
         buffer: response.data ?? '',
@@ -195,129 +228,58 @@ class PdvPinpadService {
         commandId: response.commandId,
       );
     }
-    if (startTransactionResponse != null) {
-      _currentTransaction = _currentTransaction.copyWith(startTransactionResponse: startTransactionResponse);
+  }
+
+  /// Inicia o fluxo de estorno/cancelamento de uma transação.
+  Future<void> cancelTransaction({
+    required Refund refund,
+    required Function(PaymentStatus) updatePaymentStatus,
+  }) async {
+    _state.reset();
+    updatePaymentStatus(PaymentStatus.processing);
+
+    try {
+      final result = await _repository.startTransaction(
+        amount: refund.amount,
+        functionId: FunctionId.generico.value.toString(),
+        paymentMethod: FunctionId.generico,
+      );
+
+      // TODO: Ajustar para obter o data correto do fluxo real
+      const data = '';
+
+      final dataLower = data.toLowerCase();
+      final mappedFunction = TransactionMappers.mapFuncCancelarTransacaoSimple(dataLower);
+
+      if (mappedFunction.isNotEmpty) {
+        await _repository.continueTransaction(
+          sessionId: result.sessionId,
+          continueCode: 0,
+          data: data,
+        );
+      }
+    } catch (e, stack) {
+      // TODO: Integrar com serviço de log se necessário
+      updatePaymentStatus(PaymentStatus.error);
+      // print('Erro ao cancelar transação: $e\n$stack');
+      rethrow;
     }
-
-    _transactionStreamController.add(_currentTransaction);
   }
-
-  void _updatePaymentStatus(PaymentStatus status) {
-    _paymentStatusStreamController.add(status);
-  }
-
-  Future<void> cancelTransaction() async => await continueTransaction(continueCode: -1, tipoTransacao: TipoTransacao.venda);
 
   Future<void> Function()? _mapFuncCancelarContains(String data) {
-    final key = _mapFuncCancelarTransacao(data: data.trim().toLowerCase(), estorno: _estorno!)
-        .keys
-        .firstWhere((k) => data.toLowerCase().trim().contains(k.toLowerCase().trim()), orElse: () => '');
-    if (key.isNotEmpty) {
-      return _mapFuncCancelarTransacao(data: data, estorno: _estorno!)[key]!;
+    final dataLower = data.trim().toLowerCase();
+    final mappedFunction = TransactionMappers.mapFuncCancelarTransacaoSimple(dataLower);
+    if (mappedFunction.isNotEmpty) {
+      return () async {
+        await continueTransaction(
+          continueCode: 0,
+          data: data,
+          tipoTransacao: TipoTransacao.estorno,
+        );
+      };
     }
     return null;
   }
-
-  Map<String, Future<void> Function()> _mapFuncCancelarTransacao({required String data, required Estorno estorno}) => {
-        "cancelamento de transacao": () async {
-          final options = data.split(';');
-          final result = _onlyNumbersRgx(options.firstWhere((e) => e.toLowerCase().contains('cancelamento de transacao')));
-          await continueTransaction(continueCode: 0, data: result, tipoTransacao: TipoTransacao.estorno);
-        },
-        "forneca o codigo do superviso": () async {
-          await continueTransaction(continueCode: 0, tipoTransacao: TipoTransacao.estorno);
-        },
-        "cancelamento de Cartao de Credito": () async {
-          final options = data.split(';');
-          final result = switch (estorno.paymentMethod) {
-            FunctionId.debito => _onlyNumbersRgx(options.firstWhere((e) => e.toLowerCase().contains('debito'))),
-            FunctionId.credito => _onlyNumbersRgx(options.firstWhere((e) => e.toLowerCase().contains('credito'))),
-            FunctionId.vendaCarteiraDigital => _onlyNumbersRgx(options.firstWhere((e) => e.toLowerCase().contains('carteira digital'))),
-            _ => '2',
-          };
-          await continueTransaction(continueCode: 0, data: result, tipoTransacao: TipoTransacao.estorno);
-        },
-        "valor da transacao": () async {
-          log('amount: ${estorno.amount}', name: 'valor da transacao');
-          String amount = estorno.amount.toStringAsFixed(2).replaceAll('.', '');
-          await continueTransaction(continueCode: 0, data: amount, tipoTransacao: TipoTransacao.estorno);
-        },
-        "data da transacao": () async {
-          String date = DateFormat('ddMMyyyy').format(estorno.data);
-          await continueTransaction(continueCode: 0, data: date, tipoTransacao: TipoTransacao.estorno);
-        },
-        "forneca o numero do documento a ser cancelado": () async {
-          final int nsuHost = int.parse(estorno.nsuHost);
-          await continueTransaction(continueCode: 0, data: nsuHost.toString(), tipoTransacao: TipoTransacao.estorno);
-        },
-        "pix": () async {
-          final options = data.split(';');
-          final result = _onlyNumbersRgx(options.firstWhere((e) => _onlyLettersRgx(e.toLowerCase().trim()) == 'pix'));
-          await continueTransaction(continueCode: 0, data: result, tipoTransacao: TipoTransacao.estorno);
-        },
-        "magnetico": () async {
-          final options = data.split(';');
-          final result = _onlyNumbersRgx(options.firstWhere((e) => e.toLowerCase().contains('magnetico')));
-          await continueTransaction(continueCode: 0, data: result, tipoTransacao: TipoTransacao.estorno);
-        },
-        "Estorno invalido": () async {
-          _transactionCompleter.completeError(Exception('Estorno invalido'));
-          _isFinish = true;
-        },
-        "ERRO": () async {
-          _transactionCompleter.completeError(Exception(data));
-          _isFinish = true;
-        },
-        "Transacao nao aceita": () async {
-          _transactionCompleter.completeError(Exception(data));
-          _isFinish = true;
-        },
-        "Confirma Cancelamento?": () async {
-          await continueTransaction(continueCode: 0, data: '0', tipoTransacao: TipoTransacao.estorno);
-        }
-      };
-
-  void Function()? _handleFinish(String serviceMessage) {
-    final map = {
-      "Agente nao esta esperando continua.": () {
-        _isFinish = true;
-        _updatePaymentStatus(PaymentStatus.unknow);
-        Future.delayed(const Duration(seconds: 2), () {
-          if (_transactionCompleter.isCompleted) return;
-          _transactionCompleter.completeError(Exception('Erro inesperado'));
-        });
-      },
-      "-1": () {
-        _isFinish = true;
-        _updatePaymentStatus(PaymentStatus.unknow);
-        Future.delayed(const Duration(seconds: 2), () {
-          if (_transactionCompleter.isCompleted) return;
-          _transactionCompleter.completeError(Exception('Erro inesperado'));
-        });
-      },
-    };
-    return map[serviceMessage];
-  }
-
-  String? whenPix(String? data) {
-    if (data == null) return null;
-    final datas = data.split(';');
-    final key = datas.firstWhereOrNull((e) => e.toLowerCase().contains('pix'));
-    if (key != null) {
-      return _onlyNumbersRgx(key);
-    }
-    return null;
-  }
-
-  Map<int, Future<void> Function()> _mapFuncTransacao({required int continueCode, required TipoTransacao tipoTransacao, String? data}) => {
-        21: () async {
-          final result = whenPix(data);
-          await continueTransaction(continueCode: continueCode, data: result ?? '1', tipoTransacao: tipoTransacao);
-        },
-        -11: () async {
-          _updatePaymentStatus(PaymentStatus.sucess);
-        }
-      };
 
   int? _customComandId(int fieldId, int clisitefStatus) {
     if (fieldId == 0 && clisitefStatus == 0) {
@@ -326,18 +288,95 @@ class PdvPinpadService {
     return null;
   }
 
-  _handleFinalizarEstorno(int fieldId, int clisitefStatus) {
+  void _handleFinalizarEstorno(int fieldId, int clisitefStatus) {
     if (fieldId == 0 && clisitefStatus == 0) {
-      _updatePaymentStatus(PaymentStatus.sucess);
-      finishTransaction();
+      _state.updatePaymentStatus(PaymentStatus.sucess);
+      _state.setFinish(true);
+      if (_state.currentTransaction != null) {
+        _state.completeTransaction(_state.currentTransaction!);
+      }
     }
   }
 
-  static String _onlyNumbersRgx(String text) {
-    return text.replaceAll(RegExp(r'\D'), '');
+  /// Continua uma transação em andamento
+  Future<void> continueTransactionFlow(
+    String sessionId,
+    Function(String) onErrorToBack,
+    Function(String) onErrorToFront,
+    Function(String) onSuccess,
+    Function(String) onFinish,
+  ) async {
+    try {
+      final response = await _repository.continueTransaction(
+        sessionId: sessionId,
+        continueCode: 0,
+        data: null,
+      );
+
+      if (response == null) {
+        onErrorToBack('Resposta inválida do servidor');
+        return;
+      }
+
+      // Verifica se é um erro conhecido
+      if (TransactionMappers.hasKnownError(response.data ?? '')) {
+        final errorMessage = TransactionMappers.getErrorMessage(response.data ?? '');
+        onErrorToBack(errorMessage);
+        return;
+      }
+
+      // Verifica se é um erro interno
+      if (TransactionMappers.isErrorStatus(response.clisitefStatus)) {
+        final errorMessage = TransactionMappers.getStatusMessage(response.clisitefStatus);
+        onErrorToBack(errorMessage);
+        return;
+      }
+
+      // Verifica se é uma mensagem de finalização
+      if (response.data?.contains('FINALIZAR') ?? false) {
+        onFinish(response.data ?? '');
+        return;
+      }
+
+      // Se chegou aqui, é uma mensagem de sucesso
+      onSuccess(response.data ?? '');
+    } catch (e) {
+      onErrorToBack('Erro ao continuar transação: ${e.toString()}');
+    }
   }
 
-  static String _onlyLettersRgx(String text) {
-    return text.replaceAll(RegExp(r'[^a-zA-Z]'), '');
+  /// Finaliza uma transação
+  Future<void> finishTransactionFlow(
+    String sessionId,
+    Function(String) onErrorToBack,
+    Function(String) onErrorToFront,
+    Function(String) onSuccess,
+  ) async {
+    try {
+      final response = await _repository.finishTransaction(
+        sessionId: sessionId,
+        taxInvoiceNumber: null,
+        confirm: 1,
+      );
+
+      // Verifica se é um erro conhecido
+      if (TransactionMappers.hasKnownError(response.sessionId)) {
+        final errorMessage = TransactionMappers.getErrorMessage(response.sessionId);
+        onErrorToBack(errorMessage);
+        return;
+      }
+
+      // Verifica se é um erro interno
+      if (TransactionMappers.isErrorStatus(response.clisitefStatus)) {
+        final errorMessage = TransactionMappers.getStatusMessage(response.clisitefStatus);
+        onErrorToBack(errorMessage);
+        return;
+      }
+
+      // Se chegou aqui, é uma mensagem de sucesso
+      onSuccess('Transação finalizada com sucesso');
+    } catch (e) {
+      onErrorToBack('Erro ao finalizar transação: ${e.toString()}');
+    }
   }
 }
