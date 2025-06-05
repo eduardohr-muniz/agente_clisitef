@@ -56,7 +56,7 @@ class AgenteClisitefRepository implements IAgenteClisitefRepository {
   }) async {
     Map<String, dynamic> params = {
       'sessionId': sessionId,
-      'data': data,
+      'data': data ?? '',
       'continue': continueCode,
     };
 
