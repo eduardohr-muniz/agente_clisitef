@@ -90,8 +90,6 @@ class PdvPinpadService {
 
     log('🔄 Resposta recebida - commandId: ${response?.commandId}, fieldId: ${response?.fieldId}', name: 'RESPONSE');
 
-    // await Future.delayed(const Duration(milliseconds: 500));
-
     _updateTransaction(response: response);
 
     if (continueCode == -1) {
@@ -211,7 +209,9 @@ class PdvPinpadService {
   Future<void> cancelTransaction() async => await continueTransaction(continueCode: -1, tipoTransacao: TipoTransacao.venda);
 
   Future<void> Function()? _mapFuncCancelarContains(String data) {
-    final key = _mapFuncCancelarTransacao(data: data.trim().toLowerCase(), estorno: _estorno!).keys.firstWhere((k) => data.toLowerCase().trim().contains(k.toLowerCase().trim()), orElse: () => '');
+    final key = _mapFuncCancelarTransacao(data: data.trim().toLowerCase(), estorno: _estorno!)
+        .keys
+        .firstWhere((k) => data.toLowerCase().trim().contains(k.toLowerCase().trim()), orElse: () => '');
     if (key.isNotEmpty) {
       return _mapFuncCancelarTransacao(data: data, estorno: _estorno!)[key]!;
     }

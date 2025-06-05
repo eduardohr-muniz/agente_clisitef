@@ -191,7 +191,7 @@ class CliSiTefResp {
         codigoVoucher = buffer;
         break;
       case 130:
-        saque = double.parse(buffer);
+        saque = double.tryParse(buffer) ?? -1;
         break;
       case 131:
         instituicao = buffer;
@@ -212,25 +212,25 @@ class CliSiTefResp {
         bin = buffer;
         break;
       case 137:
-        saldoAPagar = double.parse(buffer);
+        saldoAPagar = double.tryParse(buffer) ?? -1;
         break;
       case 138:
-        valorTotalRecebido = double.parse(buffer);
+        valorTotalRecebido = double.tryParse(buffer) ?? -1;
         break;
       case 139:
-        valorEntrada = double.parse(buffer);
+        valorEntrada = double.tryParse(buffer) ?? -1;
         break;
       case 140:
         dataPrimeiraParcela = buffer;
         break;
       case 143:
-        valorGorjeta = double.parse(buffer);
+        valorGorjeta = double.tryParse(buffer) ?? -1;
         break;
       case 144:
-        valorDevolucao = double.parse(buffer);
+        valorDevolucao = double.tryParse(buffer) ?? -1;
         break;
       case 145:
-        valorPagamento = double.parse(buffer);
+        valorPagamento = double.tryParse(buffer) ?? -1;
         break;
       case 146:
         valorASerCancelado = buffer;
@@ -254,10 +254,10 @@ class CliSiTefResp {
         numeroIdentificadorCupomPagamento = buffer;
         break;
       case 200:
-        saldoDisponivel = double.parse(buffer);
+        saldoDisponivel = double.tryParse(buffer) ?? -1;
         break;
       case 201:
-        saldoBloqueado = double.parse(buffer);
+        saldoBloqueado = double.tryParse(buffer) ?? -1;
         break;
       case 501:
         tipoDocumentoConsultado = buffer;
@@ -266,10 +266,10 @@ class CliSiTefResp {
         numeroDocumento = buffer;
         break;
       case 504:
-        taxaServico = double.tryParse(buffer) ?? 0;
+        taxaServico = double.tryParse(buffer) ?? -1;
         break;
       case 505:
-        numeroParcelas = int.tryParse(buffer) ?? 0;
+        numeroParcelas = int.tryParse(buffer) ?? -1;
         break;
       case 506:
         dataPreDatado = buffer;
@@ -278,7 +278,7 @@ class CliSiTefResp {
         primeiraParcela = buffer;
         break;
       case 508:
-        diasEntreParcelas = int.tryParse(buffer) ?? 0;
+        diasEntreParcelas = int.tryParse(buffer) ?? -1;
         break;
       case 509:
         mesFechado = buffer;
@@ -287,7 +287,7 @@ class CliSiTefResp {
         garantia = buffer;
         break;
       case 511:
-        numeroParcelasCDC = int.tryParse(buffer) ?? 0;
+        numeroParcelasCDC = int.tryParse(buffer) ?? -1;
         break;
       case 512:
         numeroCartaoCreditoDigitado = buffer;
