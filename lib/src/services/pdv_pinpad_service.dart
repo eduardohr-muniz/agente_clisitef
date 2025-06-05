@@ -45,8 +45,12 @@ class PdvPinpadService {
     required FunctionId functionId,
     required TipoTransacao tipoTransacao,
     required Function(PaymentStatus) updatePaymentStatus,
+    String? taxInvoiceNumber,
   }) async {
     _state.reset();
+    if (taxInvoiceNumber != null) {
+      _state.setTaxInvoiceNumber(taxInvoiceNumber);
+    }
     updatePaymentStatus(PaymentStatus.processing);
 
     try {
@@ -54,6 +58,7 @@ class PdvPinpadService {
         amount: amount,
         functionId: functionId.value.toString(),
         paymentMethod: functionId,
+        taxInvoiceNumber: _state.taxInvoiceNumber,
       );
 
       // TODO: Ajustar para obter o continueCode e data corretos do fluxo real
@@ -226,37 +231,18 @@ class PdvPinpadService {
     }
   }
 
-  /// Inicia o fluxo de estorno/cancelamento de uma transação.
-  Future<void> cancelTransaction({
-    required Refund refund,
-    required Function(PaymentStatus) updatePaymentStatus,
-  }) async {
-    _state.reset();
-    updatePaymentStatus(PaymentStatus.processing);
-
-    try {
-      final result = await _repository.startTransaction(
-        amount: refund.amount,
-        functionId: FunctionId.generico.value.toString(),
-        paymentMethod: FunctionId.generico,
-      );
-
-      const data = '';
-
-      final mappedFunction = TransactionMappers.mapFuncCancelarTransacaoSimple(data.toLowerCase());
-
-      if (mappedFunction.isNotEmpty) {
-        await _repository.continueTransaction(
-          sessionId: result.sessionId,
-          continueCode: 0,
-          data: data,
-        );
-      }
-    } catch (e) {
-      updatePaymentStatus(PaymentStatus.error);
-
-      rethrow;
+  /// Cancela a transação atual.
+  Future<void> cancelTransaction() async {
+    await continueTransaction(
+      continueCode: -1,
+      tipoTransacao: TipoTransacao.venda,
+    );
+    _state.updatePaymentStatus(PaymentStatus.canceled);
+    _state.setFinish(true);
+    if (_state.currentTransaction != null) {
+      _state.completeTransaction(_state.currentTransaction!);
     }
+    _state.reset();
   }
 
   Future<void> Function()? _mapFuncCancelarContains(String data) {

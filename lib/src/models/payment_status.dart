@@ -13,5 +13,8 @@ enum PaymentStatus {
   sucess,
 
   /// Transação finalizada e confirmada.
-  done;
+  done,
+
+  /// Transação cancelada.
+  canceled;
 }
