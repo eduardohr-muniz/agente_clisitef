@@ -32,8 +32,8 @@ class AgenteClisitef {
         baseUrl: _agenteClisitefConfig!.agenteIp,
       ),
       enableLogs: config.enableLogs,
+      talker: config.talker,
       clearLogInDays: config.clearLogsInDays,
-      saveLogsInDirectory: config.saveLogsInDirectory,
     );
 
     _agenteClisitefRepository = AgenteClisitefRepository(client: _clisitefClient!);

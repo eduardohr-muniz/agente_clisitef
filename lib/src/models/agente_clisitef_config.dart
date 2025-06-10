@@ -1,35 +1,33 @@
 import 'dart:convert';
 
+import 'package:talker/talker.dart';
+
 class AgenteClisitefConfig {
-  /// PARAMETROS DE CONFIGURACAO
   final String trnAdditionalParameters;
 
-  /// PARAMETROS INICIAIS
   final String trnInitParameters;
 
-  ///IP
   final String sitefIp;
 
   final String agenteIp;
 
-  ///EMPRESA
   final String storeId;
 
-  /// TERMINAL
   final String terminalId;
 
-  /// OPERADOR
   final String cashierOperator;
 
   final bool enableLogs;
 
   final bool saveLogsInDirectory;
 
+  final Talker? talker;
+
   final int? clearLogsInDays;
   AgenteClisitefConfig({
     this.trnAdditionalParameters = '',
     this.trnInitParameters = '',
-    this.sitefIp = ' 127.0.0.1',
+    this.sitefIp = '127.0.0.1',
     this.storeId = '00000000',
     this.terminalId = 'REST0001',
     this.cashierOperator = 'CAIXA',
@@ -37,6 +35,7 @@ class AgenteClisitefConfig {
     this.enableLogs = false,
     this.saveLogsInDirectory = false,
     this.clearLogsInDays = 2,
+    this.talker,
   });
 
   Map<String, dynamic> toMap() {
@@ -77,6 +76,10 @@ class AgenteClisitefConfig {
     String? taxInvoiceTime,
     String? cashierOperator,
     String? agenteIp,
+    Talker? talker,
+    int? clearLogsInDays,
+    bool? enableLogs,
+    bool? saveLogsInDirectory,
   }) {
     return AgenteClisitefConfig(
       trnAdditionalParameters: trnAdditionalParameters ?? this.trnAdditionalParameters,
@@ -86,6 +89,10 @@ class AgenteClisitefConfig {
       terminalId: terminalId ?? this.terminalId,
       cashierOperator: cashierOperator ?? this.cashierOperator,
       agenteIp: agenteIp ?? this.agenteIp,
+      talker: talker ?? this.talker,
+      clearLogsInDays: clearLogsInDays ?? this.clearLogsInDays,
+      enableLogs: enableLogs ?? this.enableLogs,
+      saveLogsInDirectory: saveLogsInDirectory ?? this.saveLogsInDirectory,
     );
   }
 }
