@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:intl/intl.dart';
 import 'package:talker/talker.dart';
+import 'package:dio/dio.dart';
 
 class PdvPinpadService {
   final IAgenteClisitefRepository agenteClisitefRepository;
@@ -16,12 +17,15 @@ class PdvPinpadService {
 
   PdvPinpadService({required this.agenteClisitefRepository, required this.config});
 
-  final _transactionStreamController = StreamController<Transaction>.broadcast();
-  final _paymentStatusStreamController = StreamController<PaymentStatus>.broadcast();
-  Stream<PaymentStatus> get paymentStatusStream => _paymentStatusStreamController.stream;
-  Stream<Transaction> get transactionStream => _transactionStreamController.stream;
+  final _transactionStream = StreamController<Transaction>.broadcast();
+  Stream<Transaction> get transactionStream => _transactionStream.stream;
+
+  final _paymentStatusStream = StreamController<PaymentStatus>.broadcast();
+  Stream<PaymentStatus> get paymentStatusStream => _paymentStatusStream.stream;
+
   Transaction _currentTransaction = Transaction.empty();
   Transaction get currentTransaction => _currentTransaction;
+
   Estorno? _estorno;
   String? _taxInvoiceNumber;
   bool _isFinish = false;
@@ -35,29 +39,38 @@ class PdvPinpadService {
     messagesNotifier.value = Messages(message: '', comandEvent: CommandEvents.unknown);
     _currentTransaction = Transaction.empty();
     _updatePaymentStatus(PaymentStatus.unknow);
-    _transactionStreamController.add(_currentTransaction);
+    _transactionStream.add(_currentTransaction);
     _estorno = null;
     _taxInvoiceNumber = null;
     _isFinish = false;
   }
 
   void dispose() {
-    _transactionStreamController.close();
-    _paymentStatusStreamController.close();
+    _transactionStream.close();
+    _paymentStatusStream.close();
   }
 
   Future<void> startTransaction({required PaymentMethod paymentMethod, required double amount, required String taxInvoiceNumber}) async {
     _reset();
     _currentTransaction = _currentTransaction.copyWith(tipoTransacao: TipoTransacao.venda);
     _taxInvoiceNumber = taxInvoiceNumber;
-    final startTransactionResponse = await agenteClisitefRepository.startTransaction(
-      paymentMethod: paymentMethod,
-      amount: amount,
-      taxInvoiceNumber: taxInvoiceNumber,
-    );
-    _updateTransaction(startTransactionResponse: startTransactionResponse);
 
-    continueTransaction(continueCode: 0, tipoTransacao: TipoTransacao.venda);
+    try {
+      final startTransactionResponse = await agenteClisitefRepository.startTransaction(
+        paymentMethod: paymentMethod,
+        amount: amount,
+        taxInvoiceNumber: taxInvoiceNumber,
+      );
+      _updateTransaction(startTransactionResponse: startTransactionResponse);
+
+      continueTransaction(continueCode: 0, tipoTransacao: TipoTransacao.venda);
+    } on DioException catch (e) {
+      _log?.error('❌ Erro de comunicação ao iniciar transação: ${e.message}');
+      _handleCommunicationError('Erro de comunicação ao iniciar transação: ${e.message}');
+    } catch (e) {
+      _log?.error('❌ Erro inesperado ao iniciar transação: $e');
+      _handleCommunicationError('Erro inesperado ao iniciar transação: $e');
+    }
   }
 
   Future<Transaction> extornarTransacao({required Estorno estorno}) async {
@@ -66,16 +79,27 @@ class PdvPinpadService {
     _estorno = estorno;
     messagesNotifier.value = Messages(message: 'Extornando venda, aguarde...', comandEvent: CommandEvents.messageCustomer);
     _taxInvoiceNumber == null;
-    final session = await agenteClisitefRepository.createSession();
-    final startTransactionResponse = await agenteClisitefRepository.startTransaction(
-      paymentMethod: FunctionId.generico,
-      sesionId: session.sessionId,
-      functionId: "110",
-    );
-    _updateTransaction(startTransactionResponse: startTransactionResponse);
 
-    await continueTransaction(continueCode: 0, tipoTransacao: TipoTransacao.estorno);
-    return await _transactionCompleter.future;
+    try {
+      final session = await agenteClisitefRepository.createSession();
+      final startTransactionResponse = await agenteClisitefRepository.startTransaction(
+        paymentMethod: FunctionId.generico,
+        sesionId: session.sessionId,
+        functionId: "110",
+      );
+      _updateTransaction(startTransactionResponse: startTransactionResponse);
+
+      await continueTransaction(continueCode: 0, tipoTransacao: TipoTransacao.estorno);
+      return await _transactionCompleter.future;
+    } on DioException catch (e) {
+      _log?.error('❌ Erro de comunicação ao extornar transação: ${e.message}');
+      _handleCommunicationError('Erro de comunicação ao extornar transação: ${e.message}');
+      rethrow;
+    } catch (e) {
+      _log?.error('❌ Erro inesperado ao extornar transação: $e');
+      _handleCommunicationError('Erro inesperado ao extornar transação: $e');
+      rethrow;
+    }
   }
 
   Future<void> continueTransaction({String? data, required int continueCode, required TipoTransacao tipoTransacao}) async {
@@ -92,92 +116,108 @@ class PdvPinpadService {
       return;
     }
 
-    final response = await agenteClisitefRepository.continueTransaction(
-      sessionId: _currentTransaction.startTransactionResponse!.sessionId,
-      data: data?.toString() ?? '',
-      continueCode: continueCode,
-    );
+    try {
+      final response = await agenteClisitefRepository.continueTransaction(
+        sessionId: _currentTransaction.startTransactionResponse!.sessionId,
+        data: data?.toString() ?? '',
+        continueCode: continueCode,
+      );
 
-    _updateMessage(response: response);
+      _updateMessage(response: response);
 
-    _log?.debug('🔄 Resposta recebida - commandId: ${response?.commandId}, fieldId: ${response?.fieldId}');
+      _log?.debug('🔄 Resposta recebida - commandId: ${response?.commandId}, fieldId: ${response?.fieldId}');
 
-    _updateTransaction(response: response);
+      _updateTransaction(response: response);
 
-    if (continueCode == -1) {
-      _log?.error('🛑 Cancelamento solicitado');
-      final func = _handleFinish('-1');
-      if (func != null) {
-        return func();
-      }
-    }
-
-    if (response != null) {
-      // 🔹 Verifique os mapeamentos de funções
-      if (tipoTransacao == TipoTransacao.venda) {
-        final map = _mapFuncTransacao(continueCode: continueCode, tipoTransacao: tipoTransacao, data: response.data)[response.commandId];
-        if (map != null) {
-          _log?.debug('⏩ Executando função mapeada para commandId: ${response.commandId}');
-          await map.call();
-          return;
+      if (continueCode == -1) {
+        _log?.error('🛑 Cancelamento solicitado');
+        final func = _handleFinish('-1');
+        if (func != null) {
+          return func();
         }
+      }
 
-        final customComand = _customComandId(response.fieldId, response.clisitefStatus);
-        if (customComand != null && continueCode == 0) {
-          final mappedFunction = _mapFuncTransacao(continueCode: continueCode, tipoTransacao: tipoTransacao, data: response.data)[customComand];
-          if (mappedFunction != null) {
-            _log?.debug('⏩ Executando função personalizada para commandId: $customComand');
-            await mappedFunction.call();
+      if (response != null) {
+        // 🔹 Verifique os mapeamentos de funções
+        if (tipoTransacao == TipoTransacao.venda) {
+          final map = _mapFuncTransacao(continueCode: continueCode, tipoTransacao: tipoTransacao, data: response.data)[response.commandId];
+          if (map != null) {
+            _log?.debug('⏩ Executando função mapeada para commandId: ${response.commandId}');
+            await map.call();
             return;
           }
-        }
-      }
 
-      // 🔹 Verifique se há um cancelamento
-      if (tipoTransacao == TipoTransacao.estorno) {
-        if (response.fieldId == 121) {
-          _log?.debug('⏳ Aguardando 3 segundos para finalizar estorno');
-          Future.delayed(const Duration(seconds: 3), () {
-            if (_transactionCompleter.isCompleted == false) {
-              _handleFinalizarEstorno(response.fieldId, response.clisitefStatus);
+          final customComand = _customComandId(response.fieldId, response.clisitefStatus);
+          if (customComand != null && continueCode == 0) {
+            final mappedFunction = _mapFuncTransacao(continueCode: continueCode, tipoTransacao: tipoTransacao, data: response.data)[customComand];
+            if (mappedFunction != null) {
+              _log?.debug('⏩ Executando função personalizada para commandId: $customComand');
+              await mappedFunction.call();
+              return;
             }
-          });
+          }
         }
-        final func = _mapFuncCancelarContains(response.data ?? '');
-        if (func != null) {
-          _log?.debug('⏩ Executando função de cancelamento');
-          await func();
+
+        // 🔹 Verifique se há um cancelamento
+        if (tipoTransacao == TipoTransacao.estorno) {
+          if (response.fieldId == 121) {
+            _log?.debug('⏳ Aguardando 3 segundos para finalizar estorno');
+            Future.delayed(const Duration(seconds: 3), () {
+              if (_transactionCompleter.isCompleted == false) {
+                _handleFinalizarEstorno(response.fieldId, response.clisitefStatus);
+              }
+            });
+          }
+          final func = _mapFuncCancelarContains(response.data ?? '');
+          if (func != null) {
+            _log?.debug('⏩ Executando função de cancelamento');
+            await func();
+            return;
+          }
+          _handleFinalizarEstorno(response.fieldId, response.clisitefStatus);
+        }
+
+        // 🔹 Verifique se deve finalizar
+        final finishFunction = _handleFinish(response.serviceMessage ?? '');
+        if (finishFunction != null) {
+          _log?.debug('✅ Finalizando transação');
+          finishFunction();
           return;
         }
-        _handleFinalizarEstorno(response.fieldId, response.clisitefStatus);
+      } else {
+        _log?.debug('⚠️ Resposta nula recebida');
       }
 
-      // 🔹 Verifique se deve finalizar
-      final finishFunction = _handleFinish(response.serviceMessage ?? '');
-      if (finishFunction != null) {
-        _log?.debug('✅ Finalizando transação');
-        finishFunction();
-        return;
-      }
-    } else {
-      _log?.debug('⚠️ Resposta nula recebida');
+      // 🔄 Continue chamando recursivamente
+      _log?.debug('🔄 Chamando continueTransaction novamente');
+      await continueTransaction(continueCode: continueCode, tipoTransacao: tipoTransacao);
+    } on DioException catch (e) {
+      _log?.error('❌ Erro de comunicação ao continuar transação: ${e.message}');
+      _handleCommunicationError('Erro de comunicação ao continuar transação: ${e.message}');
+    } catch (e) {
+      _log?.error('❌ Erro inesperado ao continuar transação: $e');
+      _handleCommunicationError('Erro inesperado ao continuar transação: $e');
     }
-
-    // 🔄 Continue chamando recursivamente
-    _log?.debug('🔄 Chamando continueTransaction novamente');
-    await continueTransaction(continueCode: continueCode, tipoTransacao: tipoTransacao);
   }
 
   Future<void> finishTransaction() async {
-    await agenteClisitefRepository.finishTransaction(
-      sessionId: _currentTransaction.startTransactionResponse!.sessionId,
-      taxInvoiceNumber: _taxInvoiceNumber,
-      confirm: 1,
-    );
-    _updatePaymentStatus(PaymentStatus.done);
-    _isFinish = true;
-    if (_transactionCompleter.isCompleted) return;
-    _transactionCompleter.complete(_currentTransaction);
+    try {
+      await agenteClisitefRepository.finishTransaction(
+        sessionId: _currentTransaction.startTransactionResponse!.sessionId,
+        taxInvoiceNumber: _taxInvoiceNumber,
+        confirm: 1,
+      );
+      _updatePaymentStatus(PaymentStatus.done);
+      _isFinish = true;
+      if (_transactionCompleter.isCompleted) return;
+      _transactionCompleter.complete(_currentTransaction);
+    } on DioException catch (e) {
+      _log?.error('❌ Erro de comunicação ao finalizar transação: ${e.message}');
+      _handleCommunicationError('Erro de comunicação ao finalizar transação: ${e.message}');
+    } catch (e) {
+      _log?.error('❌ Erro inesperado ao finalizar transação: $e');
+      _handleCommunicationError('Erro inesperado ao finalizar transação: $e');
+    }
   }
 
   void _updateMessage({ContinueTransactionResponse? response}) {
@@ -229,11 +269,11 @@ class PdvPinpadService {
       _currentTransaction = _currentTransaction.copyWith(startTransactionResponse: startTransactionResponse);
     }
 
-    _transactionStreamController.add(_currentTransaction);
+    _transactionStream.add(_currentTransaction);
   }
 
   void _updatePaymentStatus(PaymentStatus status) {
-    _paymentStatusStreamController.add(status);
+    _paymentStatusStream.add(status);
   }
 
   Future<void> cancelTransaction() async => await continueTransaction(continueCode: -1, tipoTransacao: TipoTransacao.venda);
@@ -369,5 +409,18 @@ class PdvPinpadService {
 
   static String _onlyLettersRgx(String text) {
     return text.replaceAll(RegExp(r'[^a-zA-Z]'), '');
+  }
+
+  /// Método auxiliar para tratar erros de comunicação
+  void _handleCommunicationError(String errorMessage) {
+    _isFinish = true;
+    _updatePaymentStatus(PaymentStatus.error);
+    if (!_transactionCompleter.isCompleted) {
+      _transactionStream.addError(Exception(errorMessage));
+      _transactionCompleter.completeError(Exception(errorMessage));
+    }
+
+    // Atualizar mensagem para o usuário
+    messagesNotifier.value = Messages(message: 'Erro de comunicação com o servidor. Tente novamente.', comandEvent: CommandEvents.messageCustomer);
   }
 }
