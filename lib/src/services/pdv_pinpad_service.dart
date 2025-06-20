@@ -16,8 +16,6 @@ class PdvPinpadService {
 
   PdvPinpadService({required this.agenteClisitefRepository, required this.config});
 
-  Talker? get _logger => config.talker;
-
   final _transactionStreamController = StreamController<Transaction>.broadcast();
   final _paymentStatusStreamController = StreamController<PaymentStatus>.broadcast();
   Stream<PaymentStatus> get paymentStatusStream => _paymentStatusStreamController.stream;
@@ -30,8 +28,9 @@ class PdvPinpadService {
   final ValueNotifier<Messages> messagesNotifier = ValueNotifier(Messages(message: '', comandEvent: CommandEvents.unknown));
   Completer<Transaction> _transactionCompleter = Completer<Transaction>();
 
+  late final Talker? _log = config.talker;
+
   void _reset() {
-    _logger?.info('🔄 Resetando transação');
     _transactionCompleter = Completer<Transaction>();
     messagesNotifier.value = Messages(message: '', comandEvent: CommandEvents.unknown);
     _currentTransaction = Transaction.empty();
@@ -43,14 +42,12 @@ class PdvPinpadService {
   }
 
   void dispose() {
-    _logger?.info('🔄 Disposando transação');
     _transactionStreamController.close();
     _paymentStatusStreamController.close();
   }
 
   Future<void> startTransaction({required PaymentMethod paymentMethod, required double amount, required String taxInvoiceNumber}) async {
     _reset();
-    _logger?.info('🔄 Iniciando transação');
     _currentTransaction = _currentTransaction.copyWith(tipoTransacao: TipoTransacao.venda);
     _taxInvoiceNumber = taxInvoiceNumber;
     final startTransactionResponse = await agenteClisitefRepository.startTransaction(
@@ -60,16 +57,15 @@ class PdvPinpadService {
     );
     _updateTransaction(startTransactionResponse: startTransactionResponse);
 
-    await continueTransaction(continueCode: 0, tipoTransacao: TipoTransacao.venda);
+    continueTransaction(continueCode: 0, tipoTransacao: TipoTransacao.venda);
   }
 
   Future<Transaction> extornarTransacao({required Estorno estorno}) async {
     _reset();
-    _logger?.info('🔄 Iniciando estorno');
     _currentTransaction = _currentTransaction.copyWith(tipoTransacao: TipoTransacao.estorno);
     _estorno = estorno;
     messagesNotifier.value = Messages(message: 'Extornando venda, aguarde...', comandEvent: CommandEvents.messageCustomer);
-    _taxInvoiceNumber = null;
+    _taxInvoiceNumber == null;
     final session = await agenteClisitefRepository.createSession();
     final startTransactionResponse = await agenteClisitefRepository.startTransaction(
       paymentMethod: FunctionId.generico,
@@ -83,12 +79,17 @@ class PdvPinpadService {
   }
 
   Future<void> continueTransaction({String? data, required int continueCode, required TipoTransacao tipoTransacao}) async {
-    if (_isFinish) return;
+    if (_isFinish) {
+      log('⚠️ Transação já finalizada, ignorando continueTransaction', name: 'TRANSACTION');
+      return;
+    }
 
-    if (_currentTransaction.startTransactionResponse == null) {
-      _logger?.info('🔄 Iniciando continueTransaction - continueCode: $continueCode, tipoTransacao: $tipoTransacao, data: $data');
-      _logger?.error('startTransactionResponse está nulo');
-      throw Exception('startTransactionResponse não pode ser nulo ao continuar a transação');
+    _log?.debug('🔄 Iniciando continueTransaction - continueCode: $continueCode, tipoTransacao: $tipoTransacao, data: $data');
+
+    if (_currentTransaction.startTransactionResponse?.sessionId == null) {
+      _log?.error('❌ Erro: sessionId é nulo');
+      _transactionCompleter.completeError(Exception('sessionId não pode ser nulo'));
+      return;
     }
 
     final response = await agenteClisitefRepository.continueTransaction(
@@ -99,9 +100,12 @@ class PdvPinpadService {
 
     _updateMessage(response: response);
 
+    _log?.debug('🔄 Resposta recebida - commandId: ${response?.commandId}, fieldId: ${response?.fieldId}');
+
     _updateTransaction(response: response);
 
     if (continueCode == -1) {
+      _log?.error('🛑 Cancelamento solicitado');
       final func = _handleFinish('-1');
       if (func != null) {
         return func();
@@ -109,9 +113,11 @@ class PdvPinpadService {
     }
 
     if (response != null) {
+      // 🔹 Verifique os mapeamentos de funções
       if (tipoTransacao == TipoTransacao.venda) {
         final map = _mapFuncTransacao(continueCode: continueCode, tipoTransacao: tipoTransacao, data: response.data)[response.commandId];
         if (map != null) {
+          _log?.debug('⏩ Executando função mapeada para commandId: ${response.commandId}');
           await map.call();
           return;
         }
@@ -120,6 +126,7 @@ class PdvPinpadService {
         if (customComand != null && continueCode == 0) {
           final mappedFunction = _mapFuncTransacao(continueCode: continueCode, tipoTransacao: tipoTransacao, data: response.data)[customComand];
           if (mappedFunction != null) {
+            _log?.debug('⏩ Executando função personalizada para commandId: $customComand');
             await mappedFunction.call();
             return;
           }
@@ -129,6 +136,7 @@ class PdvPinpadService {
       // 🔹 Verifique se há um cancelamento
       if (tipoTransacao == TipoTransacao.estorno) {
         if (response.fieldId == 121) {
+          _log?.debug('⏳ Aguardando 3 segundos para finalizar estorno');
           Future.delayed(const Duration(seconds: 3), () {
             if (_transactionCompleter.isCompleted == false) {
               _handleFinalizarEstorno(response.fieldId, response.clisitefStatus);
@@ -137,6 +145,7 @@ class PdvPinpadService {
         }
         final func = _mapFuncCancelarContains(response.data ?? '');
         if (func != null) {
+          _log?.debug('⏩ Executando função de cancelamento');
           await func();
           return;
         }
@@ -146,19 +155,17 @@ class PdvPinpadService {
       // 🔹 Verifique se deve finalizar
       final finishFunction = _handleFinish(response.serviceMessage ?? '');
       if (finishFunction != null) {
+        _log?.debug('✅ Finalizando transação');
         finishFunction();
         return;
       }
+    } else {
+      _log?.debug('⚠️ Resposta nula recebida');
     }
 
-    if (response == null) {
-      _logger?.info('🔄 Chamando continueTransaction novamente - sem resposta');
-      _logger?.error('response está nulo');
-      await Future.delayed(const Duration(milliseconds: 500));
-      await continueTransaction(continueCode: continueCode, tipoTransacao: tipoTransacao);
-    } else {
-      _logger?.warning('⚠️ Nenhuma ação tomada para a resposta recebida');
-    }
+    // 🔄 Continue chamando recursivamente
+    _log?.debug('🔄 Chamando continueTransaction novamente');
+    await continueTransaction(continueCode: continueCode, tipoTransacao: tipoTransacao);
   }
 
   Future<void> finishTransaction() async {
@@ -175,23 +182,35 @@ class PdvPinpadService {
 
   void _updateMessage({ContinueTransactionResponse? response}) {
     if (response != null) {
+      _log?.debug('📨 Atualizando mensagem - commandId: ${response.commandId}');
+
       final command = CommandEvents.fromCommandId(response.commandId);
+      final message = response.data ?? '';
+
       if (command == CommandEvents.messageCashier) {
-        messagesNotifier.value = Messages(message: response.data ?? '', comandEvent: command);
+        _log?.debug('👨‍💼 Mensagem para o operador: $message');
+        messagesNotifier.value = Messages(message: message, comandEvent: command);
       }
       if (command == CommandEvents.messageCustomer) {
-        messagesNotifier.value = Messages(message: response.data ?? '', comandEvent: command);
+        _log?.debug('👤 Mensagem para o cliente: $message');
+        messagesNotifier.value = Messages(message: message, comandEvent: command);
       }
       if (command == CommandEvents.messageCashierCustomer) {
-        messagesNotifier.value = Messages(message: response.data ?? '', comandEvent: command);
+        _log?.debug('👥 Mensagem para operador e cliente: $message');
+        messagesNotifier.value = Messages(message: message, comandEvent: command);
       }
+    } else {
+      _log?.debug('⚠️ Resposta nula recebida em _updateMessage');
     }
   }
 
   void _updateTransaction({ContinueTransactionResponse? response, StartTransactionResponse? startTransactionResponse}) {
     if (response != null) {
+      _log?.debug('📝 Atualizando transação com resposta - fieldId: ${response.fieldId}, commandId: ${response.commandId}');
+
       final event = DataEvents.fildIdToDataEvent[response.fieldId] ?? DataEvents.unknown;
       final command = CommandEvents.fromCommandId(response.commandId);
+
       _currentTransaction = _currentTransaction.copyWith(
         cliSiTefResp: _currentTransaction.cliSiTefResp.onFildid(
           fieldId: response.fieldId,
@@ -204,7 +223,9 @@ class PdvPinpadService {
         commandId: response.commandId,
       );
     }
+
     if (startTransactionResponse != null) {
+      _log?.debug('📝 Atualizando transação com startTransactionResponse - sessionId: ${startTransactionResponse.sessionId}');
       _currentTransaction = _currentTransaction.copyWith(startTransactionResponse: startTransactionResponse);
     }
 
