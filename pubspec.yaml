@@ -17,7 +17,7 @@ dependencies:
   collection: ^1.18.0
   talker: any
   talker_dio_logger: any
-  sentry_dio: ^9.1.0
+  sentry_dio: ^8.1.4
 
 dev_dependencies:
   flutter_test:
