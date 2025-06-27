@@ -40,19 +40,25 @@ class AgenteClisitefRepository implements IAgenteClisitefRepository {
 
   @override
   Future<ContinueTransactionResponse?> continueTransaction({required String sessionId, required int continueCode, String? data}) async {
-    Map<String, dynamic> params = {
-      'sessionId': sessionId,
-      'data': data,
-      'continue': continueCode,
-    };
+    try {
+      Map<String, dynamic> params = {
+        'sessionId': sessionId,
+        'data': data,
+        'continue': continueCode,
+      };
 
-    final request = await client.post(
-      '/agente/clisitef/continueTransaction',
-      data: params,
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-    );
-    if (request.data == null) return null;
-    return ContinueTransactionResponse.fromMap(request.data);
+      final request = await client.post(
+        '/agente/clisitef/continueTransaction',
+        data: params,
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      );
+      if (request.data == null) return null;
+      return ContinueTransactionResponse.fromMap(request.data);
+    } catch (e) {
+      //TODO: @eduardo - Tratar erro de continueTransaction e retirar posterirormente
+      config.talker?.critical('Erro na request continueTransaction: $e');
+      rethrow;
+    }
   }
 
   @override

@@ -1,7 +1,6 @@
-import 'dart:developer';
-
 import 'package:agente_clisitef/src/services/client/clien_exports.dart';
 import 'package:dio/dio.dart';
+import 'package:sentry_dio/sentry_dio.dart';
 import 'package:talker/talker.dart';
 import 'package:talker_dio_logger/talker_dio_logger_interceptor.dart';
 import 'package:talker_dio_logger/talker_dio_logger_settings.dart';
@@ -14,12 +13,16 @@ class ClientDio implements IClient {
   ClientDio({BaseOptions? baseOptions, this.enableLogs = false, this.talker, int? clearLogInDays}) {
     _dio = Dio(baseOptions ?? _defaultOptions);
     if (talker != null) {
-      _dio.interceptors.add(TalkerDioLogger(
+      _dio.interceptors.add(
+        TalkerDioLogger(
           talker: talker!,
           settings: const TalkerDioLoggerSettings(
             printRequestHeaders: true,
-          )));
+          ),
+        ),
+      );
     }
+    _dio.addSentry();
   }
 
   final _defaultOptions = BaseOptions(baseUrl: 'hhtps://localhost:8080');

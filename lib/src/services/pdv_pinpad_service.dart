@@ -78,7 +78,7 @@ class PdvPinpadService {
     _currentTransaction = _currentTransaction.copyWith(tipoTransacao: TipoTransacao.estorno);
     _estorno = estorno;
     messagesNotifier.value = Messages(message: 'Extornando venda, aguarde...', comandEvent: CommandEvents.messageCustomer);
-    _taxInvoiceNumber == null;
+    _taxInvoiceNumber = null;
 
     try {
       final session = await agenteClisitefRepository.createSession();
@@ -202,6 +202,12 @@ class PdvPinpadService {
 
   Future<void> finishTransaction() async {
     try {
+      if (_currentTransaction.startTransactionResponse?.sessionId == null) {
+        _log?.error('❌ Erro: sessionId é nulo em finishTransaction');
+        _transactionCompleter.completeError(Exception('sessionId não pode ser nulo'));
+        return;
+      }
+
       await agenteClisitefRepository.finishTransaction(
         sessionId: _currentTransaction.startTransactionResponse!.sessionId,
         taxInvoiceNumber: _taxInvoiceNumber,
@@ -279,6 +285,11 @@ class PdvPinpadService {
   Future<void> cancelTransaction() async => await continueTransaction(continueCode: -1, tipoTransacao: TipoTransacao.venda);
 
   Future<void> Function()? _mapFuncCancelarContains(String data) {
+    if (_estorno == null) {
+      _log?.error('❌ Erro: _estorno é nulo em _mapFuncCancelarContains');
+      return null;
+    }
+
     final key = _mapFuncCancelarTransacao(data: data.trim().toLowerCase(), estorno: _estorno!)
         .keys
         .firstWhere((k) => data.toLowerCase().trim().contains(k.toLowerCase().trim()), orElse: () => '');
