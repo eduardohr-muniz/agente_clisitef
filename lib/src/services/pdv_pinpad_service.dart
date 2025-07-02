@@ -349,6 +349,10 @@ class PdvPinpadService {
           _transactionCompleter.completeError(Exception(data));
           _isFinish = true;
         },
+        "chip invalido": () async {
+          _transactionCompleter.completeError(Exception(data));
+          _isFinish = true;
+        },
         "Transacao nao aceita": () async {
           _transactionCompleter.completeError(Exception(data));
           _isFinish = true;
