@@ -13,11 +13,11 @@ dependencies:
   dio: ^5.7.0
   logger: ^2.4.0
   path_provider: ^2.1.5
-  intl: ">=0.18.0"
   collection: ^1.18.0
   talker: any
   talker_dio_logger: any
   sentry_dio: ^8.1.4
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:
