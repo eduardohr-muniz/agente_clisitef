@@ -17,8 +17,8 @@ class ClientDio implements IClient {
         TalkerDioLogger(
           talker: talker!,
           settings: const TalkerDioLoggerSettings(
-            printRequestHeaders: false,
-            printErrorHeaders: false,
+            printRequestHeaders: true,
+            printErrorHeaders: true,
             enabled: true,
           ),
         ),

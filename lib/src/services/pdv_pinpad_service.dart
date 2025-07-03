@@ -104,11 +104,8 @@ class PdvPinpadService {
 
   Future<void> continueTransaction({String? data, required int continueCode, required TipoTransacao tipoTransacao}) async {
     if (_isFinish) {
-      log('⚠️ Transação já finalizada, ignorando continueTransaction', name: 'TRANSACTION');
       return;
     }
-
-    _log?.debug('🔄 Iniciando continueTransaction - continueCode: $continueCode, tipoTransacao: $tipoTransacao, data: $data');
 
     if (_currentTransaction.startTransactionResponse?.sessionId == null) {
       _log?.error('❌ Erro: sessionId é nulo');
@@ -125,8 +122,6 @@ class PdvPinpadService {
 
       _updateMessage(response: response);
 
-      _log?.debug('🔄 Resposta recebida - commandId: ${response?.commandId}, fieldId: ${response?.fieldId}');
-
       _updateTransaction(response: response);
 
       if (continueCode == -1) {
@@ -142,7 +137,6 @@ class PdvPinpadService {
         if (tipoTransacao == TipoTransacao.venda) {
           final map = _mapFuncTransacao(continueCode: continueCode, tipoTransacao: tipoTransacao, data: response.data)[response.commandId];
           if (map != null) {
-            _log?.debug('⏩ Executando função mapeada para commandId: ${response.commandId}');
             await map.call();
             return;
           }
@@ -151,7 +145,6 @@ class PdvPinpadService {
           if (customComand != null && continueCode == 0) {
             final mappedFunction = _mapFuncTransacao(continueCode: continueCode, tipoTransacao: tipoTransacao, data: response.data)[customComand];
             if (mappedFunction != null) {
-              _log?.debug('⏩ Executando função personalizada para commandId: $customComand');
               await mappedFunction.call();
               return;
             }
@@ -161,7 +154,6 @@ class PdvPinpadService {
         // 🔹 Verifique se há um cancelamento
         if (tipoTransacao == TipoTransacao.estorno) {
           if (response.fieldId == 121) {
-            _log?.debug('⏳ Aguardando 3 segundos para finalizar estorno');
             Future.delayed(const Duration(seconds: 3), () {
               if (_transactionCompleter.isCompleted == false) {
                 _handleFinalizarEstorno(response.fieldId, response.clisitefStatus);
@@ -170,7 +162,6 @@ class PdvPinpadService {
           }
           final func = _mapFuncCancelarContains(response.data ?? '');
           if (func != null) {
-            _log?.debug('⏩ Executando função de cancelamento');
             await func();
             return;
           }
@@ -180,16 +171,12 @@ class PdvPinpadService {
         // 🔹 Verifique se deve finalizar
         final finishFunction = _handleFinish(response.serviceMessage ?? '');
         if (finishFunction != null) {
-          _log?.debug('✅ Finalizando transação');
           finishFunction();
           return;
         }
-      } else {
-        _log?.debug('⚠️ Resposta nula recebida');
       }
 
       // 🔄 Continue chamando recursivamente
-      _log?.debug('🔄 Chamando continueTransaction novamente');
       await continueTransaction(continueCode: continueCode, tipoTransacao: tipoTransacao);
     } on DioException catch (e) {
       _log?.error('❌ Erro de comunicação ao continuar transação: ${e.message}');
@@ -228,32 +215,23 @@ class PdvPinpadService {
 
   void _updateMessage({ContinueTransactionResponse? response}) {
     if (response != null) {
-      _log?.debug('📨 Atualizando mensagem - commandId: ${response.commandId}');
-
       final command = CommandEvents.fromCommandId(response.commandId);
       final message = response.data ?? '';
 
       if (command == CommandEvents.messageCashier) {
-        _log?.debug('👨‍💼 Mensagem para o operador: $message');
         messagesNotifier.value = Messages(message: message, comandEvent: command);
       }
       if (command == CommandEvents.messageCustomer) {
-        _log?.debug('👤 Mensagem para o cliente: $message');
         messagesNotifier.value = Messages(message: message, comandEvent: command);
       }
       if (command == CommandEvents.messageCashierCustomer) {
-        _log?.debug('👥 Mensagem para operador e cliente: $message');
         messagesNotifier.value = Messages(message: message, comandEvent: command);
       }
-    } else {
-      _log?.debug('⚠️ Resposta nula recebida em _updateMessage');
     }
   }
 
   void _updateTransaction({ContinueTransactionResponse? response, StartTransactionResponse? startTransactionResponse}) {
     if (response != null) {
-      _log?.debug('📝 Atualizando transação com resposta - fieldId: ${response.fieldId}, commandId: ${response.commandId}');
-
       final event = DataEvents.fildIdToDataEvent[response.fieldId] ?? DataEvents.unknown;
       final command = CommandEvents.fromCommandId(response.commandId);
 
@@ -271,7 +249,6 @@ class PdvPinpadService {
     }
 
     if (startTransactionResponse != null) {
-      _log?.debug('📝 Atualizando transação com startTransactionResponse - sessionId: ${startTransactionResponse.sessionId}');
       _currentTransaction = _currentTransaction.copyWith(startTransactionResponse: startTransactionResponse);
     }
 
@@ -319,7 +296,6 @@ class PdvPinpadService {
           await continueTransaction(continueCode: 0, data: result, tipoTransacao: TipoTransacao.estorno);
         },
         "valor da transacao": () async {
-          log('amount: ${estorno.amount}', name: 'valor da transacao');
           String amount = estorno.amount.toStringAsFixed(2).replaceAll('.', '');
           await continueTransaction(continueCode: 0, data: amount, tipoTransacao: TipoTransacao.estorno);
         },
