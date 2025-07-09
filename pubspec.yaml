@@ -1,0 +1,21 @@
+name: agente_clisitef
+description: "SDK CliSiTef para Flutter - Interface com AgenteCliSiTef via REST API"
+version: 1.0.0
+homepage: https://github.com/your-username/agente_clisitef
+
+environment:
+  sdk: ^3.5.3
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  dio: ^5.7.0
+  talker: ">=3.1.0"
+  talker_dio_logger: ">=2.4.0"
+  intl: ^0.20.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
