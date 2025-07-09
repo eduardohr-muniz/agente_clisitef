@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:agente_clisitef/src/core/constants/clisitef_constants.dart';
 import 'package:agente_clisitef/src/core/services/message_manager.dart';
+import 'package:agente_clisitef/src/core/utils/format_utils.dart';
 import 'package:agente_clisitef/src/models/clisitef_config.dart';
 import 'package:agente_clisitef/src/models/clisitef_response.dart';
 import 'package:agente_clisitef/src/models/transaction_data.dart';
@@ -172,8 +173,8 @@ class CliSiTefServiceAgente {
     required String sessionId,
     required bool confirm,
     String? taxInvoiceNumber,
-    String? taxInvoiceDate,
-    String? taxInvoiceTime,
+    required DateTime taxInvoiceDate,
+    required DateTime taxInvoiceTime,
   }) async {
     if (!_isInitialized) {
       throw Exception('Serviço não inicializado');
@@ -182,8 +183,8 @@ class CliSiTefServiceAgente {
       sessionId: sessionId,
       confirm: confirm,
       taxInvoiceNumber: taxInvoiceNumber,
-      taxInvoiceDate: taxInvoiceDate,
-      taxInvoiceTime: taxInvoiceTime,
+      taxInvoiceDate: FormatUtils.formatDate(taxInvoiceDate),
+      taxInvoiceTime: FormatUtils.formatTime(taxInvoiceTime),
     );
   }
 

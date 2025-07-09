@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:agente_clisitef/agente_clisitef.dart';
-import 'package:agente_clisitef/src/core/utils/format_utils.dart';
 import 'src/pages/pending_transaction_page.dart';
 
 void main() {
@@ -205,7 +204,7 @@ class _TotemExamplePageState extends State<TotemExamplePage> {
   final _serverIPController = TextEditingController(text: 'intranet5.wbagestao.com');
   final _storeIdController = TextEditingController(text: '00000000');
   final _terminalIdController = TextEditingController(text: 'REST0001');
-  final _functionCodeController = TextEditingController(text: '122');
+  // final _functionCodeController = TextEditingController(text: '122');
   final _amountController = TextEditingController(text: '100');
   final _cupomFiscalController = TextEditingController(text: '1234');
   final _operatorController = TextEditingController(text: 'CAIXA');
@@ -288,7 +287,7 @@ class _TotemExamplePageState extends State<TotemExamplePage> {
       final functionCode = _getFunctionCode(_selectedTransactionType);
       final amount = _amountController.text;
       final cupomFiscal = _cupomFiscalController.text;
-      final operator = _operatorController.text;
+      // final operator = _operatorController.text;
 
       // Data e hora atuais
       final now = DateTime.now();
@@ -657,8 +656,8 @@ class _TotemExamplePageState extends State<TotemExamplePage> {
         confirm: confirm,
         // Envia dados fiscais conforme homologação
         taxInvoiceNumber: _cupomFiscalController.text,
-        taxInvoiceDate: FormatUtils.formatDate(DateTime.now()),
-        taxInvoiceTime: FormatUtils.formatTime(DateTime.now()),
+        taxInvoiceDate: DateTime.now(),
+        taxInvoiceTime: DateTime.now(),
       );
 
       setState(() {
