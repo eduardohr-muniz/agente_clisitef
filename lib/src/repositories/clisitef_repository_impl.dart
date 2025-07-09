@@ -63,8 +63,6 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
   @override
   Future<TransactionResponse> startTransaction(TransactionData data) async {
     try {
-      _talker.info('Iniciando transação: ${data.functionId}');
-
       // Combina os dados da transação com a configuração
       final body = Map<String, String>.from(data.toMap());
       body.addAll(_config.toMap());
@@ -81,8 +79,6 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       if (transactionResponse.sessionId != null) {
         _currentSessionId = transactionResponse.sessionId;
       }
-
-      _talker.info('Transação iniciada com sucesso. Status: ${transactionResponse.clisitefStatus}');
 
       return transactionResponse;
     } on DioException catch (e) {
@@ -109,8 +105,6 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
     String? data,
   }) async {
     try {
-      _talker.info('Continuando transação. Comando: $command, Dados: $data');
-
       // O parâmetro continue deve ser sempre "0" para continuar o fluxo
       // O command é apenas para identificar o tipo de comando
       final body = {
@@ -119,8 +113,6 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
         'data': data ?? '', // Sempre envia 'data', mesmo que vazio
       };
 
-      _talker.info('Dados da requisição continueTransaction: $body');
-
       final response = await _dio.post(
         CliSiTefConstants.CONTINUE_TRANSACTION_ENDPOINT,
         data: body,
@@ -128,8 +120,6 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       );
 
       final transactionResponse = TransactionResponse.fromJson(response.data);
-
-      _talker.info('Transação continuada. Status: ${transactionResponse.clisitefStatus}');
 
       return transactionResponse;
     } on DioException catch (e) {
@@ -158,8 +148,6 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
     String? taxInvoiceTime,
   }) async {
     try {
-      _talker.info('Finalizando transação. Confirmar: $confirm');
-
       // Conforme sua homologação, o finishTransaction deve enviar todos os parâmetros
       // confirm=1&sessionId=xxx&taxInvoiceNumber=1234&taxInvoiceDate=20180611&taxInvoiceTime=170000
       final body = {
@@ -178,8 +166,6 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
         }
       }
 
-      _talker.info('Dados da requisição finishTransaction: $body');
-
       // Envia como dados simples sem FormData
       final response = await _dio.post(
         CliSiTefConstants.FINISH_TRANSACTION_ENDPOINT,
@@ -191,8 +177,6 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
 
       // Limpa o sessionId atual
       _currentSessionId = null;
-
-      _talker.info('Transação finalizada. Status: ${transactionResponse.clisitefStatus}');
 
       return transactionResponse;
     } on DioException catch (e) {
@@ -215,8 +199,6 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
   @override
   Future<TransactionResponse> createSession() async {
     try {
-      _talker.info('Criando sessão...');
-
       final response = await _dio.post(
         CliSiTefConstants.SESSION_ENDPOINT,
         data: _config.toMap(),
@@ -228,7 +210,6 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       if (transactionResponse.isServiceSuccess && transactionResponse.sessionId != null) {
         _currentSessionId = transactionResponse.sessionId;
         _isInitialized = true;
-        _talker.info('Sessão criada com sucesso. SessionId: $_currentSessionId');
       } else {
         _talker.error('Erro ao criar sessão: ${transactionResponse.errorMessage}');
       }
@@ -254,8 +235,6 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
   @override
   Future<TransactionResponse> getSession() async {
     try {
-      _talker.info('Consultando sessão...');
-
       final response = await _dio.get(CliSiTefConstants.SESSION_ENDPOINT);
 
       final transactionResponse = TransactionResponse.fromJson(response.data);
@@ -263,7 +242,6 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       if (transactionResponse.isServiceSuccess && transactionResponse.sessionId != null) {
         _currentSessionId = transactionResponse.sessionId;
         _isInitialized = true;
-        _talker.info('Sessão consultada com sucesso. SessionId: $_currentSessionId');
       }
 
       return transactionResponse;
@@ -287,8 +265,6 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
   @override
   Future<TransactionResponse> deleteSession() async {
     try {
-      _talker.info('Excluindo sessão...');
-
       final response = await _dio.delete(CliSiTefConstants.SESSION_ENDPOINT);
 
       final transactionResponse = TransactionResponse.fromJson(response.data);
@@ -296,8 +272,6 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       // Limpa o sessionId atual
       _currentSessionId = null;
       _isInitialized = false;
-
-      _talker.info('Sessão excluída com sucesso');
 
       return transactionResponse;
     } on DioException catch (e) {
@@ -320,13 +294,9 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
   @override
   Future<TransactionResponse> getState() async {
     try {
-      _talker.info('Consultando estado do serviço...');
-
       final response = await _dio.get(CliSiTefConstants.STATE_ENDPOINT);
 
       final transactionResponse = TransactionResponse.fromJson(response.data);
-
-      _talker.info('Estado consultado. ServiceState: ${transactionResponse.serviceState}');
 
       return transactionResponse;
     } on DioException catch (e) {
@@ -349,16 +319,12 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
   @override
   Future<TransactionResponse> getVersion() async {
     try {
-      _talker.info('Consultando versão...');
-
       final response = await _dio.post(
         CliSiTefConstants.GET_VERSION_ENDPOINT,
         options: Options(headers: {'Content-Type': 'application/x-www-form-urlencoded'}),
       );
 
       final transactionResponse = TransactionResponse.fromJson(response.data);
-
-      _talker.info('Versão consultada com sucesso');
 
       return transactionResponse;
     } on DioException catch (e) {
@@ -381,8 +347,6 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
   @override
   Future<TransactionResponse> openPinPad({required String sessionId}) async {
     try {
-      _talker.info('Abrindo PinPad...');
-
       final response = await _dio.post(
         CliSiTefConstants.PINPAD_OPEN_ENDPOINT,
         data: {CliSiTefConstants.PARAM_SESSION_ID: sessionId},
@@ -390,8 +354,6 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       );
 
       final transactionResponse = TransactionResponse.fromJson(response.data);
-
-      _talker.info('PinPad aberto com sucesso');
 
       return transactionResponse;
     } on DioException catch (e) {
@@ -414,8 +376,6 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
   @override
   Future<TransactionResponse> closePinPad({required String sessionId}) async {
     try {
-      _talker.info('Fechando PinPad...');
-
       final response = await _dio.post(
         CliSiTefConstants.PINPAD_CLOSE_ENDPOINT,
         data: {CliSiTefConstants.PARAM_SESSION_ID: sessionId},
@@ -423,8 +383,6 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       );
 
       final transactionResponse = TransactionResponse.fromJson(response.data);
-
-      _talker.info('PinPad fechado com sucesso');
 
       return transactionResponse;
     } on DioException catch (e) {
@@ -447,8 +405,6 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
   @override
   Future<TransactionResponse> isPinPadPresent({required String sessionId}) async {
     try {
-      _talker.info('Verificando presença do PinPad...');
-
       final response = await _dio.post(
         CliSiTefConstants.PINPAD_IS_PRESENT_ENDPOINT,
         data: {CliSiTefConstants.PARAM_SESSION_ID: sessionId},
@@ -456,8 +412,6 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       );
 
       final transactionResponse = TransactionResponse.fromJson(response.data);
-
-      _talker.info('Presença do PinPad verificada');
 
       return transactionResponse;
     } on DioException catch (e) {
@@ -483,8 +437,6 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
     required String displayMessage,
   }) async {
     try {
-      _talker.info('Lendo confirmação Sim/Não do PinPad...');
-
       final response = await _dio.post(
         CliSiTefConstants.PINPAD_READ_YES_NO_ENDPOINT,
         data: {
@@ -495,8 +447,6 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       );
 
       final transactionResponse = TransactionResponse.fromJson(response.data);
-
-      _talker.info('Confirmação Sim/Não lida do PinPad');
 
       return transactionResponse;
     } on DioException catch (e) {
@@ -522,8 +472,6 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
     required String displayMessage,
   }) async {
     try {
-      _talker.info('Definindo mensagem do PinPad: $displayMessage');
-
       final response = await _dio.post(
         CliSiTefConstants.PINPAD_SET_DISPLAY_MESSAGE_ENDPOINT,
         data: {
@@ -534,8 +482,6 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       );
 
       final transactionResponse = TransactionResponse.fromJson(response.data);
-
-      _talker.info('Mensagem do PinPad definida com sucesso');
 
       return transactionResponse;
     } on DioException catch (e) {
