@@ -1,4 +1,3 @@
-import 'package:agente_clisitef/src/core/constants/clisitef_constants.dart';
 import 'clisitef_error_codes.dart';
 
 /// Exceção customizada para erros do CliSiTef

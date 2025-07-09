@@ -24,36 +24,29 @@ class StartTransactionUseCase {
   }) async {
     final cliSiTefFields = CliSiTefResponse();
     try {
-      print('[StartTransactionUseCase] Iniciando transação: ${data.functionId}');
-
       // Iniciar transação
       final startResponse = await _repository.startTransaction(data);
       _preencherCampos(cliSiTefFields, startResponse);
 
       if (!startResponse.isServiceSuccess) {
-        print('[StartTransactionUseCase] Erro ao iniciar transação: ${startResponse.errorMessage}');
         return StartTransactionResult.error(startResponse, clisitefFields: cliSiTefFields);
       }
 
       // Se não precisa continuar, retorna imediatamente
       if (!startResponse.shouldContinue) {
-        print('[StartTransactionUseCase] Transação concluída sem processamento iterativo');
         return StartTransactionResult.completed(startResponse, clisitefFields: cliSiTefFields);
       }
 
       // Se não deve processar automaticamente, retorna para processamento manual
       if (!autoProcess) {
-        print('[StartTransactionUseCase] Transação iniciada, aguardando processamento manual');
         return StartTransactionResult.pending(startResponse, clisitefFields: cliSiTefFields);
       }
 
       // Processar fluxo iterativo
-      print('[StartTransactionUseCase] Processando fluxo iterativo...');
       final iterativeResult = await _processIterativeFlow(startResponse, stopBeforeFinish, cliSiTefFields);
 
       return iterativeResult;
     } catch (e) {
-      print('[StartTransactionUseCase] Erro inesperado: $e');
       return StartTransactionResult.error(
         TransactionResponse(
           serviceStatus: 0, // SERVICE_STATUS_ERROR
@@ -88,14 +81,11 @@ class StartTransactionUseCase {
 
       // Loop de processamento iterativo
       while (currentResponse.shouldContinue) {
-        print('[StartTransactionUseCase] Processando comando: ${currentResponse.command}');
-
         // Preencher campos da resposta atual
         _preencherCampos(cliSiTefFields, currentResponse);
 
         // Se não há comando específico, continuar sem dados
         if (currentResponse.command == null) {
-          print('[StartTransactionUseCase] Continuando transação sem comando específico...');
           currentResponse = await _repository.continueTransaction(
             sessionId: sessionId,
             command: 0, // COMMAND_DISPLAY_MESSAGE
@@ -121,7 +111,6 @@ class StartTransactionUseCase {
         }
 
         if (!currentResponse.isServiceSuccess) {
-          print('[StartTransactionUseCase] Erro no fluxo iterativo: ${currentResponse.errorMessage}');
           return StartTransactionResult.error(currentResponse, clisitefFields: cliSiTefFields);
         }
       }
@@ -131,26 +120,21 @@ class StartTransactionUseCase {
 
       // Se deve parar antes da finalização (transação pendente)
       if (stopBeforeFinish) {
-        print('[StartTransactionUseCase] Transação processada, aguardando confirmação');
         return StartTransactionResult.pending(currentResponse, clisitefFields: cliSiTefFields);
       }
 
       // Finalizar transação (transação normal)
-      print('[StartTransactionUseCase] Finalizando transação...');
       final finishResponse = await _repository.finishTransaction(
         sessionId: sessionId,
         confirm: true,
       );
 
       if (!finishResponse.isServiceSuccess) {
-        print('[StartTransactionUseCase] Erro ao finalizar transação: ${finishResponse.errorMessage}');
         return StartTransactionResult.error(finishResponse, clisitefFields: cliSiTefFields);
       }
 
-      print('[StartTransactionUseCase] Transação finalizada com sucesso');
       return StartTransactionResult.completed(finishResponse, clisitefFields: cliSiTefFields);
     } catch (e) {
-      print('[StartTransactionUseCase] Erro no fluxo iterativo: $e');
       return StartTransactionResult.error(
         TransactionResponse(
           serviceStatus: 0, // SERVICE_STATUS_ERROR
@@ -167,7 +151,6 @@ class StartTransactionUseCase {
     try {
       // Se não há comando, não há nada para processar
       if (response.command == null) {
-        print('[StartTransactionUseCase] Nenhum comando para processar');
         return null;
       }
 
@@ -183,59 +166,45 @@ class StartTransactionUseCase {
           return null; // Não precisa retornar dados
 
         case 1: // COMMAND_COLLECT_AMOUNT
-          print('[StartTransactionUseCase] Coletando valor monetário: ${response.message}');
           return '10,00'; // Mock - em produção seria input do usuário
 
         case 2: // COMMAND_COLLECT_OPERATOR
-          print('[StartTransactionUseCase] Coletando operador: ${response.message}');
           return 'CAIXA'; // Mock - em produção seria input do usuário
 
         case 3: // COMMAND_COLLECT_CUPOM
-          print('[StartTransactionUseCase] Coletando cupom fiscal: ${response.message}');
           return '123456'; // Mock - em produção seria input do usuário
 
         case 4: // COMMAND_COLLECT_DATE
-          print('[StartTransactionUseCase] Coletando data: ${response.message}');
           return '20241201'; // Mock - em produção seria input do usuário
 
         case 5: // COMMAND_COLLECT_TIME
-          print('[StartTransactionUseCase] Coletando hora: ${response.message}');
           return '1430'; // Mock - em produção seria input do usuário
 
         case 6: // COMMAND_COLLECT_PASSWORD
-          print('[StartTransactionUseCase] Coletando senha: ${response.message}');
           return '1234'; // Mock - em produção seria input do usuário
 
         case 7: // COMMAND_COLLECT_CARD
-          print('[StartTransactionUseCase] Coletando cartão: ${response.message}');
           return null; // Não precisa retornar dados
 
         case 20: // COMMAND_COLLECT_YES_NO
-          print('[StartTransactionUseCase] Coletando confirmação: ${response.message}');
           return 'S'; // Mock - em produção seria seleção do usuário
 
         case 21: // COMMAND_COLLECT_MENU
-          print('[StartTransactionUseCase] Coletando opção do menu: ${response.message}');
           return '1'; // Mock - em produção seria seleção do usuário
 
         case 22: // COMMAND_COLLECT_FLOAT
-          print('[StartTransactionUseCase] Coletando valor com ponto flutuante: ${response.message}');
           return '10.50'; // Mock - em produção seria input do usuário
 
         case 23: // COMMAND_COLLECT_CARD_READER
-          print('[StartTransactionUseCase] Coletando dados do leitor de cartão: ${response.message}');
           return null; // Não precisa retornar dados
 
         case 24: // COMMAND_COLLECT_YES_NO_EXTENDED
-          print('[StartTransactionUseCase] Coletando confirmação estendida: ${response.message}');
           return 'S'; // Mock - em produção seria seleção do usuário
 
         default:
-          print('[StartTransactionUseCase] Comando desconhecido: ${response.command}');
           return null; // Comando não reconhecido
       }
     } catch (e) {
-      print('[StartTransactionUseCase] Erro ao processar comando: $e');
       return null; // Indica erro no processamento
     }
   }

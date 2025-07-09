@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 class CliSiTefResponse {
   bool debito = false;
   bool credito = false;

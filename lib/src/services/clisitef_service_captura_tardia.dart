@@ -40,23 +40,18 @@ class CliSiTefServiceCapturaTardia {
   /// Inicializa o serviço
   Future<bool> initialize() async {
     try {
-      print('[CliSiTefCapturaTardia] Inicializando serviço...');
-
       // Validar configuração
       final errors = _config.validate();
       if (errors.isNotEmpty) {
-        print('[CliSiTefCapturaTardia] Erros de validação: ${errors.join(', ')}');
         throw CliSiTefException.invalidConfiguration(
           details: 'Erros de validação: ${errors.join(', ')}',
         );
       }
 
       // Criar sessão
-      print('[CliSiTefCapturaTardia] Criando sessão...');
       final sessionResponse = await _repository.createSession();
 
       if (!sessionResponse.isServiceSuccess) {
-        print('[CliSiTefCapturaTardia] Erro ao criar sessão: ${sessionResponse.errorMessage}');
         throw CliSiTefException.fromCode(
           sessionResponse.clisitefStatus,
           details: 'Erro ao criar sessão: ${sessionResponse.errorMessage}',
@@ -67,11 +62,8 @@ class CliSiTefServiceCapturaTardia {
       _currentSessionId = sessionResponse.sessionId;
       _isInitialized = true;
 
-      print('[CliSiTefCapturaTardia] Serviço inicializado com sucesso. SessionId: $_currentSessionId');
       return true;
     } catch (e) {
-      print('[CliSiTefCapturaTardia] Erro ao inicializar serviço: $e');
-
       // Se já é uma CliSiTefException, rethrow
       if (e is CliSiTefException) {
         rethrow;
@@ -90,13 +82,10 @@ class CliSiTefServiceCapturaTardia {
   Future<CapturaTardiaTransaction?> startPendingTransaction(TransactionData data) async {
     try {
       if (!_isInitialized) {
-        print('[CliSiTefCapturaTardia] Serviço não inicializado');
         throw CliSiTefException.serviceNotInitialized(
           details: 'Serviço não foi inicializado antes de iniciar transação',
         );
       }
-
-      print('[CliSiTefCapturaTardia] Iniciando transação pendente: ${data.functionId}');
 
       // Usar o use case para processar a transação
       final useCase = StartTransactionUseCase(_repository);
@@ -107,8 +96,6 @@ class CliSiTefServiceCapturaTardia {
       );
 
       if (!result.isSuccess) {
-        print('[CliSiTefCapturaTardia] Erro na transação: ${result.errorMessage}');
-
         // Verificar se é um código de cancelamento específico
         final errorCode = result.response.clisitefStatus;
         if (CliSiTefErrorCode.isCancellationCode(errorCode)) {
@@ -123,7 +110,6 @@ class CliSiTefServiceCapturaTardia {
       }
 
       // Criar transação pendente com os campos mapeados
-      print('[CliSiTefCapturaTardia] Transação pendente criada com sucesso');
       if (result.response.clisitefStatus < 0) {
         throw CliSiTefException.fromCode(
           result.response.clisitefStatus,
@@ -141,8 +127,6 @@ class CliSiTefServiceCapturaTardia {
         invoiceTime: data.taxInvoiceTime,
       );
     } catch (e) {
-      print('[CliSiTefCapturaTardia] Erro inesperado na transação: $e');
-
       // Se já é uma CliSiTefException, rethrow
       if (e is CliSiTefException) {
         rethrow;
@@ -203,13 +187,10 @@ class CliSiTefServiceCapturaTardia {
   /// Verifica a conectividade com o servidor
   Future<bool> checkConnectivity() async {
     try {
-      print('[CliSiTefCapturaTardia] Verificando conectividade...');
       final response = await _repository.getState();
       final isConnected = response.isServiceSuccess;
-      print('[CliSiTefCapturaTardia] Conectividade: ${isConnected ? 'OK' : 'FALHA'}');
       return isConnected;
     } catch (e) {
-      print('[CliSiTefCapturaTardia] Erro ao verificar conectividade: $e');
       throw CliSiTefException.connectionError(
         details: 'Erro ao verificar conectividade: $e',
         originalError: e,
@@ -220,17 +201,13 @@ class CliSiTefServiceCapturaTardia {
   /// Finaliza o serviço
   Future<void> dispose() async {
     try {
-      print('[CliSiTefCapturaTardia] Finalizando serviço...');
-
       if (_currentSessionId != null) {
         await _repository.deleteSession();
         _currentSessionId = null;
       }
 
       _isInitialized = false;
-      print('[CliSiTefCapturaTardia] Serviço finalizado');
     } catch (e) {
-      print('[CliSiTefCapturaTardia] Erro ao finalizar serviço: $e');
       throw CliSiTefException.internalError(
         details: 'Erro ao finalizar serviço: $e',
         originalError: e,

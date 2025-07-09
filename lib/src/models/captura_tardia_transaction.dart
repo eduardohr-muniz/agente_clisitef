@@ -47,8 +47,6 @@ class CapturaTardiaTransaction {
     }
 
     try {
-      print('[PendingTransaction] Confirmando transação: $sessionId');
-
       final fiscalDate = FormatUtils.formatDate(taxInvoiceDate ?? invoiceDate);
       final fiscalTime = FormatUtils.formatTime(taxInvoiceTime ?? invoiceTime);
 
@@ -62,14 +60,10 @@ class CapturaTardiaTransaction {
 
       if (result.isServiceSuccess) {
         _isFinalized = true;
-        print('[PendingTransaction] Transação confirmada com sucesso');
-      } else {
-        print('[PendingTransaction] Erro ao confirmar transação: ${result.errorMessage}');
-      }
+      } else {}
 
       return result;
     } catch (e) {
-      print('[PendingTransaction] Erro inesperado ao confirmar: $e');
       rethrow;
     }
   }
@@ -85,8 +79,6 @@ class CapturaTardiaTransaction {
     }
 
     try {
-      print('[PendingTransaction] Cancelando transação: $sessionId');
-
       final fiscalDate = FormatUtils.formatDate(taxInvoiceDate ?? invoiceDate);
       final fiscalTime = FormatUtils.formatTime(taxInvoiceTime ?? invoiceTime);
 
@@ -100,14 +92,10 @@ class CapturaTardiaTransaction {
 
       if (result.isServiceSuccess) {
         _isFinalized = true;
-        print('[PendingTransaction] Transação cancelada com sucesso');
-      } else {
-        print('[PendingTransaction] Erro ao cancelar transação: ${result.errorMessage}');
       }
 
       return result;
     } catch (e) {
-      print('[PendingTransaction] Erro inesperado ao cancelar: $e');
       rethrow;
     }
   }
@@ -122,8 +110,6 @@ class CapturaTardiaTransaction {
     }
 
     try {
-      print('[PendingTransaction] Continuando transação: $sessionId com comando: $command');
-
       final result = await repository.continueTransaction(
         sessionId: sessionId,
         command: command,
@@ -132,7 +118,6 @@ class CapturaTardiaTransaction {
 
       return result;
     } catch (e) {
-      print('[PendingTransaction] Erro inesperado ao continuar: $e');
       rethrow;
     }
   }

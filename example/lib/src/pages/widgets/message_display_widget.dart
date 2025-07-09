@@ -1,5 +1,7 @@
+// ignore_for_file: deprecated_member_use
+
+import 'package:agente_clisitef/agente_clisitef.dart';
 import 'package:flutter/material.dart';
-import 'package:agente_clisitef/src/core/services/message_manager.dart';
 
 /// Widget que exibe as mensagens do MessageManager de forma reativa
 class MessageDisplayWidget extends StatelessWidget {

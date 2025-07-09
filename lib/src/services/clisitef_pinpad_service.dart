@@ -60,7 +60,7 @@ class PasswordReadResult {
 /// Serviço PinPad do CliSiTef baseado na especificação oficial
 class CliSiTefPinPadService {
   final CliSiTefRepository _repository;
-  final CliSiTefConfig _config;
+  // final CliSiTefConfig _config;
   final AgenteClisitefMessageManager _messageManager = AgenteClisitefMessageManager.instance;
 
   bool _isInitialized = false;
@@ -70,17 +70,14 @@ class CliSiTefPinPadService {
   CliSiTefPinPadService({
     required CliSiTefRepository repository,
     required CliSiTefConfig config,
-  })  : _repository = repository,
-        _config = config;
+  }) : _repository = repository;
 
   /// Inicializa o serviço PinPad
   Future<bool> initialize() async {
     try {
-      print('[CliSiTefPinPad] Inicializando serviço PinPad...');
       _messageManager.messageCashier.value = 'Inicializando PinPad...';
 
       if (!_repository.isInitialized) {
-        print('[CliSiTefPinPad] Repositório não inicializado');
         _messageManager.processError(errorMessage: 'Repositório não inicializado');
         return false;
       }
@@ -89,23 +86,19 @@ class CliSiTefPinPadService {
       _isPinPadPresent = await _repository.checkPinPadPresence();
 
       if (_isPinPadPresent) {
-        print('[CliSiTefPinPad] PinPad detectado');
         _messageManager.messageCashier.value = '✅ PinPad detectado';
 
         // Definir mensagem padrão
         await setMessage('Aguardando cartão...');
 
         _isInitialized = true;
-        print('[CliSiTefPinPad] Serviço PinPad inicializado com sucesso');
         _messageManager.messageCashier.value = '✅ PinPad inicializado com sucesso';
         return true;
       } else {
-        print('[CliSiTefPinPad] PinPad não detectado');
         _messageManager.processError(errorMessage: 'PinPad não detectado');
         return false;
       }
     } catch (e) {
-      print('[CliSiTefPinPad] Erro ao inicializar serviço PinPad: $e');
       _messageManager.processError(errorMessage: 'Erro ao inicializar PinPad: $e');
       return false;
     }
@@ -115,16 +108,12 @@ class CliSiTefPinPadService {
   Future<bool> checkPresence() async {
     try {
       if (!_repository.isInitialized) {
-        print('[CliSiTefPinPad] Repositório não inicializado');
         return false;
       }
 
-      print('[CliSiTefPinPad] Verificando presença do PinPad');
       _isPinPadPresent = await _repository.checkPinPadPresence();
-      print('[CliSiTefPinPad] PinPad presente: $_isPinPadPresent');
       return _isPinPadPresent;
     } catch (e) {
-      print('[CliSiTefPinPad] Erro ao verificar presença do PinPad: $e');
       return false;
     }
   }
@@ -133,33 +122,27 @@ class CliSiTefPinPadService {
   Future<int> setMessage(String message) async {
     try {
       if (!_repository.isInitialized) {
-        print('[CliSiTefPinPad] Repositório não inicializado');
         _messageManager.processError(errorMessage: 'Repositório não inicializado');
         return -1;
       }
 
       if (message.length > 40) {
-        print('[CliSiTefPinPad] Mensagem muito longa para o PinPad');
         _messageManager.processError(errorMessage: 'Mensagem muito longa para o PinPad');
         return -1;
       }
 
-      print('[CliSiTefPinPad] Definindo mensagem no PinPad: "$message"');
       _messageManager.messageOperator.value = message;
       final result = await _repository.setPinPadMessage(message);
 
       if (result == 0) {
         _currentMessage = message;
-        print('[CliSiTefPinPad] Mensagem definida com sucesso');
         _messageManager.messageCashier.value = '✅ Mensagem definida no PinPad';
       } else {
-        print('[CliSiTefPinPad] Erro ao definir mensagem: $result');
         _messageManager.processError(errorMessage: 'Erro ao definir mensagem: $result');
       }
 
       return result;
     } catch (e) {
-      print('[CliSiTefPinPad] Erro inesperado ao definir mensagem: $e');
       _messageManager.processError(errorMessage: 'Erro ao definir mensagem: $e');
       return -1;
     }
@@ -174,11 +157,8 @@ class CliSiTefPinPadService {
   Future<CardReadResult> readCardSecure(String message) async {
     try {
       if (!_repository.isInitialized) {
-        print('[CliSiTefPinPad] Repositório não inicializado');
         return CardReadResult.error('Repositório não inicializado');
       }
-
-      print('[CliSiTefPinPad] Lendo cartão de forma segura: "$message"');
 
       // Definir mensagem no PinPad
       await setMessage(message);
@@ -187,14 +167,11 @@ class CliSiTefPinPadService {
       final cardData = await _waitForCardInsertion();
 
       if (cardData != null) {
-        print('[CliSiTefPinPad] Cartão lido com sucesso');
         return CardReadResult.success(cardData);
       } else {
-        print('[CliSiTefPinPad] Dados do cartão não encontrados');
         return CardReadResult.error('Dados do cartão não encontrados');
       }
     } catch (e) {
-      print('[CliSiTefPinPad] Erro inesperado ao ler cartão: $e');
       return CardReadResult.error('Erro interno: $e');
     }
   }
@@ -203,11 +180,8 @@ class CliSiTefPinPadService {
   Future<CardReadResult> readChipCard(String message, int modality) async {
     try {
       if (!_repository.isInitialized) {
-        print('[CliSiTefPinPad] Repositório não inicializado');
         return CardReadResult.error('Repositório não inicializado');
       }
-
-      print('[CliSiTefPinPad] Lendo cartão com chip: "$message", modalidade: $modality');
 
       // Definir mensagem no PinPad
       await setMessage(message);
@@ -216,14 +190,11 @@ class CliSiTefPinPadService {
       final cardData = await _waitForChipCardInsertion(modality);
 
       if (cardData != null) {
-        print('[CliSiTefPinPad] Cartão com chip lido com sucesso');
         return CardReadResult.success(cardData);
       } else {
-        print('[CliSiTefPinPad] Dados do cartão com chip não encontrados');
         return CardReadResult.error('Dados do cartão com chip não encontrados');
       }
     } catch (e) {
-      print('[CliSiTefPinPad] Erro inesperado ao ler cartão com chip: $e');
       return CardReadResult.error('Erro interno: $e');
     }
   }
@@ -232,11 +203,8 @@ class CliSiTefPinPadService {
   Future<PasswordReadResult> readPassword(String securityKey) async {
     try {
       if (!_repository.isInitialized) {
-        print('[CliSiTefPinPad] Repositório não inicializado');
         return PasswordReadResult.error('Repositório não inicializado');
       }
-
-      print('[CliSiTefPinPad] Lendo senha do cliente');
 
       // Definir mensagem no PinPad
       await setMessage('Digite sua senha');
@@ -245,14 +213,11 @@ class CliSiTefPinPadService {
       final password = await _waitForPasswordInput(securityKey);
 
       if (password != null) {
-        print('[CliSiTefPinPad] Senha lida com sucesso');
         return PasswordReadResult.success(password);
       } else {
-        print('[CliSiTefPinPad] Senha não encontrada');
         return PasswordReadResult.error('Senha não encontrada');
       }
     } catch (e) {
-      print('[CliSiTefPinPad] Erro inesperado ao ler senha: $e');
       return PasswordReadResult.error('Erro interno: $e');
     }
   }
@@ -261,11 +226,8 @@ class CliSiTefPinPadService {
   Future<bool?> readConfirmation(String message) async {
     try {
       if (!_repository.isInitialized) {
-        print('[CliSiTefPinPad] Repositório não inicializado');
         return null;
       }
-
-      print('[CliSiTefPinPad] Lendo confirmação: "$message"');
 
       // Definir mensagem no PinPad
       await setMessage(message);
@@ -273,10 +235,8 @@ class CliSiTefPinPadService {
       // Aguardar confirmação
       final confirmation = await _waitForConfirmation();
 
-      print('[CliSiTefPinPad] Confirmação lida: $confirmation');
       return confirmation;
     } catch (e) {
-      print('[CliSiTefPinPad] Erro inesperado ao ler confirmação: $e');
       return null;
     }
   }
@@ -285,11 +245,8 @@ class CliSiTefPinPadService {
   Future<bool> removeCard() async {
     try {
       if (!_repository.isInitialized) {
-        print('[CliSiTefPinPad] Repositório não inicializado');
         return false;
       }
-
-      print('[CliSiTefPinPad] Removendo cartão');
 
       // Definir mensagem no PinPad
       await setMessage('Remova o cartão');
@@ -298,15 +255,11 @@ class CliSiTefPinPadService {
       final removed = await _waitForCardRemoval();
 
       if (removed) {
-        print('[CliSiTefPinPad] Cartão removido com sucesso');
         await setMessage('Aguardando cartão...');
-      } else {
-        print('[CliSiTefPinPad] Erro ao remover cartão');
-      }
+      } else {}
 
       return removed;
     } catch (e) {
-      print('[CliSiTefPinPad] Erro inesperado ao remover cartão: $e');
       return false;
     }
   }
@@ -315,23 +268,17 @@ class CliSiTefPinPadService {
   Future<bool> openPinPad() async {
     try {
       if (!_repository.isInitialized) {
-        print('[CliSiTefPinPad] Repositório não inicializado');
         return false;
       }
-
-      print('[CliSiTefPinPad] Abrindo PinPad');
 
       final response = await _repository.openPinPad(sessionId: _repository.currentSessionId!);
 
       if (response.isServiceSuccess) {
-        print('[CliSiTefPinPad] PinPad aberto com sucesso');
         return true;
       } else {
-        print('[CliSiTefPinPad] Erro ao abrir PinPad: ${response.errorMessage}');
         return false;
       }
     } catch (e) {
-      print('[CliSiTefPinPad] Erro inesperado ao abrir PinPad: $e');
       return false;
     }
   }
@@ -340,23 +287,17 @@ class CliSiTefPinPadService {
   Future<bool> closePinPad() async {
     try {
       if (!_repository.isInitialized) {
-        print('[CliSiTefPinPad] Repositório não inicializado');
         return false;
       }
-
-      print('[CliSiTefPinPad] Fechando PinPad');
 
       final response = await _repository.closePinPad(sessionId: _repository.currentSessionId!);
 
       if (response.isServiceSuccess) {
-        print('[CliSiTefPinPad] PinPad fechado com sucesso');
         return true;
       } else {
-        print('[CliSiTefPinPad] Erro ao fechar PinPad: ${response.errorMessage}');
         return false;
       }
     } catch (e) {
-      print('[CliSiTefPinPad] Erro inesperado ao fechar PinPad: $e');
       return false;
     }
   }
@@ -364,31 +305,26 @@ class CliSiTefPinPadService {
   // Métodos auxiliares para aguardar eventos do PinPad
   Future<String?> _waitForCardInsertion() async {
     // TODO: Implementar aguardo de inserção de cartão
-    print('[CliSiTefPinPad] TODO: Implementar aguardo de inserção de cartão');
     return null;
   }
 
   Future<String?> _waitForChipCardInsertion(int modality) async {
     // TODO: Implementar aguardo de inserção de cartão com chip
-    print('[CliSiTefPinPad] TODO: Implementar aguardo de inserção de cartão com chip');
     return null;
   }
 
   Future<String?> _waitForPasswordInput(String securityKey) async {
     // TODO: Implementar aguardo de digitação de senha
-    print('[CliSiTefPinPad] TODO: Implementar aguardo de digitação de senha');
     return null;
   }
 
   Future<bool?> _waitForConfirmation() async {
     // TODO: Implementar aguardo de confirmação
-    print('[CliSiTefPinPad] TODO: Implementar aguardo de confirmação');
     return null;
   }
 
   Future<bool> _waitForCardRemoval() async {
     // TODO: Implementar aguardo de remoção de cartão
-    print('[CliSiTefPinPad] TODO: Implementar aguardo de remoção de cartão');
     return false;
   }
 

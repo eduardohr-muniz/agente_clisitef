@@ -77,7 +77,7 @@ class _PendingTransactionPageState extends State<PendingTransactionPage> {
   /// Confirma a transação
   Future<void> _confirmTransaction() async {
     try {
-      final result = await _controller.confirmTransaction();
+      // final result = await _controller.confirmTransaction();
       // Mensagens tratadas pelo MessageManager
     } catch (e) {
       // Erro tratado pelo MessageManager
@@ -87,7 +87,7 @@ class _PendingTransactionPageState extends State<PendingTransactionPage> {
   /// Cancela a transação
   Future<void> _cancelTransaction() async {
     try {
-      final result = await _controller.cancelTransaction();
+      // final result = await _controller.cancelTransaction();
       // Mensagens tratadas pelo MessageManager
     } catch (e) {
       // Erro tratado pelo MessageManager
