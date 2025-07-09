@@ -1,7 +1,5 @@
 import 'package:agente_clisitef/src/core/constants/clisitef_constants.dart';
-import 'package:agente_clisitef/src/core/utils/validation_utils.dart';
-import 'package:agente_clisitef/src/core/utils/format_utils.dart';
-import 'package:agente_clisitef/src/core/exceptions/clisitef_exception.dart';
+import 'package:talker/talker.dart';
 
 /// Configuração do CliSiTef para integração com AgenteCliSiTef
 class CliSiTefConfig {
@@ -38,6 +36,8 @@ class CliSiTefConfig {
   /// Parâmetros de inicialização da transação (trnInitParameters)
   final String trnInitParameters;
 
+  final Talker? talker;
+
   const CliSiTefConfig({
     required this.sitefIp,
     required this.storeId,
@@ -50,6 +50,7 @@ class CliSiTefConfig {
     this.cashierOperator = CliSiTefConstants.DEFAULT_OPERATOR,
     this.trnAdditionalParameters = '',
     this.trnInitParameters = '',
+    this.talker,
   });
 
   /// Construtor com valores padrão para desenvolvimento
@@ -61,6 +62,7 @@ class CliSiTefConfig {
     String? cashierOperator,
     String? trnAdditionalParameters,
     String? trnInitParameters,
+    Talker? talker,
   }) {
     return CliSiTefConfig(
       sitefIp: sitefIp ?? CliSiTefConstants.DEFAULT_SITEF_IP,
@@ -71,6 +73,7 @@ class CliSiTefConfig {
       trnAdditionalParameters: trnAdditionalParameters ?? '',
       trnInitParameters: trnInitParameters ?? '',
       enableLogs: true,
+      talker: talker,
     );
   }
 
@@ -86,6 +89,7 @@ class CliSiTefConfig {
     String? cashierOperator,
     String? trnAdditionalParameters,
     String? trnInitParameters,
+    Talker? talker,
   }) {
     return CliSiTefConfig(
       sitefIp: sitefIp,
@@ -99,6 +103,7 @@ class CliSiTefConfig {
       cashierOperator: cashierOperator ?? CliSiTefConstants.DEFAULT_OPERATOR,
       trnAdditionalParameters: trnAdditionalParameters ?? '',
       trnInitParameters: trnInitParameters ?? '',
+      talker: talker,
     );
   }
 

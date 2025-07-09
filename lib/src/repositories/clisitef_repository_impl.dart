@@ -18,12 +18,12 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
   bool _isInitialized = false;
 
   CliSiTefRepositoryImpl({required CliSiTefConfig config}) : _config = config {
-    _initializeDio();
+    _initializeDio(config.talker);
   }
 
   /// Inicializa o Dio com configurações
-  void _initializeDio() {
-    _talker = Talker();
+  void _initializeDio(Talker? talker) {
+    _talker = talker ?? Talker();
 
     _dio = Dio(BaseOptions(
       baseUrl: _config.baseUrl,
