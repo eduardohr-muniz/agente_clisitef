@@ -1,4 +1,5 @@
 import '../../core/services/message_manager.dart';
+import '../../core/utils/format_utils.dart';
 import '../../models/transaction_data.dart';
 import '../../models/transaction_response.dart';
 import '../../models/clisitef_response.dart';
@@ -9,8 +10,9 @@ import '../../repositories/clisitef_repository.dart';
 class StartTransactionUseCase {
   final CliSiTefRepository _repository;
   final AgenteClisitefMessageManager _messageManager = AgenteClisitefMessageManager.instance;
+  final bool _useSmartPixSelection;
 
-  StartTransactionUseCase(this._repository);
+  StartTransactionUseCase(this._repository, {bool useSmartPixSelection = false}) : _useSmartPixSelection = useSmartPixSelection;
 
   /// Executa o use case de iniciar transação
   ///
@@ -190,7 +192,23 @@ class StartTransactionUseCase {
           return 'S'; // Mock - em produção seria seleção do usuário
 
         case 21: // COMMAND_COLLECT_MENU
-          return '1'; // Mock - em produção seria seleção do usuário
+          if (_useSmartPixSelection) {
+            // SELEÇÃO AUTOMÁTICA INTELIGENTE DE PIX (apenas para fluxo automático)
+            final menuData = response.buffer ?? '';
+            final selectedOption = FormatUtils.selectPixOption(menuData);
+
+            // Log da seleção automática para debug
+            final options = FormatUtils.parseMenuOptions(menuData);
+            final selectedText = options.firstWhere((opt) => opt['index'] == selectedOption,
+                orElse: () => {'index': selectedOption, 'text': 'Opção $selectedOption'})['text'];
+
+            _messageManager.processCommand(1, message: 'Seleção automática PIX: $selectedText (opção $selectedOption)');
+
+            return selectedOption;
+          } else {
+            // Fluxo manual - retorna "1" como padrão (para manter compatibilidade)
+            return '1'; // Mock - em produção seria seleção do usuário via diálogo
+          }
 
         case 22: // COMMAND_COLLECT_FLOAT
           return '10.50'; // Mock - em produção seria input do usuário

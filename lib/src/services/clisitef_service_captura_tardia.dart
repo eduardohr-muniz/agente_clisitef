@@ -80,8 +80,8 @@ class CliSiTefServiceCapturaTardia {
         );
       }
 
-      // Usar o use case para processar a transação
-      final useCase = StartTransactionUseCase(_repository);
+      // Usar o use case para processar a transação com seleção inteligente de PIX
+      final useCase = StartTransactionUseCase(_repository, useSmartPixSelection: true);
       final result = await useCase.execute(
         data: data,
         autoProcess: true,

@@ -109,4 +109,78 @@ class FormatUtils {
     }
     return operator;
   }
+
+  /// Seleciona automaticamente a opção PIX de um menu baseado no texto das opções
+  ///
+  /// Analisa uma string de menu no formato "1:Pix;2:Pix Troco;" ou "1:Ticket;2:PIX;"
+  /// e retorna o índice da opção que contém "PIX" (case insensitive)
+  ///
+  /// Parâmetros:
+  /// - [menuData]: String com as opções no formato "1:texto;2:texto;..."
+  ///
+  /// Retorna:
+  /// - String com o índice da opção PIX (ex: "1", "2")
+  /// - "1" como fallback se não encontrar PIX
+  static String selectPixOption(String menuData) {
+    try {
+      // Divide as opções por ponto e vírgula
+      final options = menuData.split(';');
+
+      for (final option in options) {
+        if (option.trim().isEmpty) continue;
+
+        // Separa índice do texto (formato "1:Pix")
+        final colonIndex = option.indexOf(':');
+        if (colonIndex > 0) {
+          final index = option.substring(0, colonIndex).trim();
+          final text = option.substring(colonIndex + 1).trim();
+
+          // Verifica se o texto contém "PIX" (case insensitive)
+          if (text.toUpperCase().contains('PIX')) {
+            return index;
+          }
+        }
+      }
+
+      // Fallback: se não encontrar PIX, retorna "1"
+      return '1';
+    } catch (e) {
+      // Em caso de erro no parsing, retorna "1" como padrão
+      return '1';
+    }
+  }
+
+  /// Analisa as opções de um menu e retorna uma lista estruturada
+  ///
+  /// Parâmetros:
+  /// - [menuData]: String com as opções no formato "1:texto;2:texto;..."
+  ///
+  /// Retorna:
+  /// - List<Map<String, String>> com 'index' e 'text' de cada opção
+  static List<Map<String, String>> parseMenuOptions(String menuData) {
+    final options = <Map<String, String>>[];
+
+    try {
+      final parts = menuData.split(';');
+
+      for (final part in parts) {
+        if (part.trim().isEmpty) continue;
+
+        final colonIndex = part.indexOf(':');
+        if (colonIndex > 0) {
+          final index = part.substring(0, colonIndex).trim();
+          final text = part.substring(colonIndex + 1).trim();
+
+          options.add({
+            'index': index,
+            'text': text,
+          });
+        }
+      }
+    } catch (e) {
+      // Em caso de erro, retorna lista vazia
+    }
+
+    return options;
+  }
 }
