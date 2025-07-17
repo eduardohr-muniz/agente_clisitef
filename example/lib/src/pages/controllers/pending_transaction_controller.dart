@@ -273,6 +273,29 @@ class PendingTransactionController extends ChangeNotifier {
     _messageManager.messageCashier.value = 'Pronto para transações pendentes';
   }
 
+  /// Cancela uma operação em andamento (durante o fluxo interativo)
+  Future<bool> cancelOperationInProgress() async {
+    if (!_validateService()) return false;
+
+    try {
+      _messageManager.messageCashier.value = 'Cancelando operação em andamento...';
+
+      final result = await _service!.cancelOperationInProgress(sessionId: _sessionId);
+
+      if (result) {
+        _messageManager.messageCashier.value = 'Operação cancelada pelo operador';
+        clearTransaction(); // Limpar estado da transação
+        return true;
+      } else {
+        _messageManager.messageCashier.value = 'Falha ao cancelar operação';
+        return false;
+      }
+    } catch (e) {
+      _messageManager.messageCashier.value = 'Erro ao cancelar operação: ${e.toString()}';
+      return false;
+    }
+  }
+
   /// Libera recursos
   @override
   void dispose() {

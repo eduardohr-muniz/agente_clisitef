@@ -118,6 +118,25 @@ class _PendingTransactionPageState extends State<PendingTransactionPage> {
     }
   }
 
+  /// Cancela operação em progresso pelo operador
+  Future<void> _cancelOperationInProgress() async {
+    // Confirmar cancelamento com o usuário
+    final shouldCancel = await _showCancelConfirmationDialog();
+    if (!shouldCancel) return;
+
+    try {
+      final result = await _controller.cancelOperationInProgress();
+
+      if (result) {
+        _showSuccessSnackbar('🛑 Operação cancelada pelo operador');
+      } else {
+        _showErrorSnackbar('❌ Falha ao cancelar operação');
+      }
+    } catch (e) {
+      _showErrorSnackbar('❌ Erro ao cancelar: ${e.toString()}');
+    }
+  }
+
   /// Exibe diálogo de interação
   void _showInteractionDialog(TransactionResponse response) {
     showDialog(
@@ -128,6 +147,32 @@ class _PendingTransactionPageState extends State<PendingTransactionPage> {
         onContinue: _continueTransaction,
       ),
     );
+  }
+
+  /// Mostra diálogo de confirmação para cancelar operação
+  Future<bool> _showCancelConfirmationDialog() async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('🛑 Cancelar Operação'),
+            content: const Text(
+              'Tem certeza que deseja cancelar a operação em progresso?\n\n'
+              'Esta ação irá interromper o processo atual e resetar a sessão.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Não'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text('Sim, Cancelar'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   /// Exibe snackbar de sucesso
@@ -230,6 +275,41 @@ class _PendingTransactionPageState extends State<PendingTransactionPage> {
               onCancelTransaction: _cancelTransaction,
             ),
             const SizedBox(height: 16),
+
+            // Botão de Cancelamento de Operação em Progresso
+            if (_controller.isLoading) ...[
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Cancelamento de Operação',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Use este botão para cancelar operações que estão em loop ou travadas.',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton.icon(
+                        onPressed: _cancelOperationInProgress,
+                        icon: const Icon(Icons.stop),
+                        label: const Text('🛑 CANCELAR OPERAÇÃO'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.all(16),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
 
             // Instructions Card
             Card(

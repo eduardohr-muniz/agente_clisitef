@@ -1,17 +1,8 @@
 import 'dart:async';
 import 'package:agente_clisitef/agente_clisitef.dart';
-import 'package:agente_clisitef/src/core/exceptions/clisitef_exception.dart';
 import 'package:agente_clisitef/src/core/exceptions/clisitef_error_codes.dart';
 import 'package:agente_clisitef/src/core/utils/format_utils.dart';
-import 'package:agente_clisitef/src/models/clisitef_config.dart';
 import 'package:agente_clisitef/src/models/clisitef_response.dart';
-import 'package:agente_clisitef/src/models/captura_tardia_transaction.dart';
-import 'package:agente_clisitef/src/models/transaction_data.dart';
-import 'package:agente_clisitef/src/repositories/clisitef_repository.dart';
-import 'package:agente_clisitef/src/repositories/clisitef_repository_impl.dart';
-import 'package:agente_clisitef/src/services/clisitef_core_service.dart';
-import 'package:agente_clisitef/src/services/clisitef_pinpad_service.dart';
-import 'package:agente_clisitef/src/services/core/start_transaction_usecase.dart';
 
 /// Serviço para transações pendentes de confirmação
 /// Permite iniciar uma transação e decidir posteriormente se confirmar ou cancelar
@@ -219,90 +210,39 @@ class CliSiTefServiceCapturaTardia {
     }
   }
 
-  /// Inicia uma transação de estorno de pagamento já confirmado
+  /// Cancela uma operação em andamento (durante o fluxo interativo)
   ///
-  /// Este método usa o Menu Gerencial (functionId: 110) para navegar
-  /// até a opção de cancelamento de transação já processada.
-  ///
-  /// [valorOriginal] - Valor da transação original em centavos
-  /// [dataTransacaoOriginal] - Data da transação original no formato DDMMAAAA
-  /// [nsuOriginal] - NSU da transação a ser estornada
-  /// [tipoCartao] - Tipo do cartão: 'DEBITO' ou 'CREDITO' (padrão: 'CREDITO')
-  /// [codigoSupervisor] - Código do supervisor (padrão: '0')
-  ///
-  /// Retorna [CapturaTardiaTransaction] pendente para confirmação posterior
-  Future<CapturaTardiaTransaction?> startEstornoTransaction({
-    required double trnAmount,
-    required String dataTransacaoOriginal,
-    required String nsuOriginal,
-    String tipoCartao = 'CREDITO',
-    String codigoSupervisor = '0',
-  }) async {
+  /// Este método permite ao operador cancelar uma transação que está
+  /// em progresso, deletando a sessão para quebrar qualquer loop
+  Future<bool> cancelOperationInProgress({String? sessionId}) async {
     try {
       if (!_isInitialized) {
         throw CliSiTefException.serviceNotInitialized(
-          details: 'Serviço não foi inicializado antes de iniciar estorno',
+          details: 'Serviço não foi inicializado antes de cancelar operação',
         );
       }
 
-      // Criar dados da transação para estorno usando Menu Gerencial (110)
-      final now = DateTime.now();
-      final transactionData = TransactionData.administrative(
-        functionId: 110, // Menu Gerencial
-        taxInvoiceNumber: 'ESTORNO_${nsuOriginal}_${now.millisecondsSinceEpoch}',
-        taxInvoiceDate: now,
-        taxInvoiceTime: now,
-        cashierOperator: codigoSupervisor,
-        trnAdditionalParameters: {
-          // Parâmetros específicos para estorno
-          'TIPO_OPERACAO': 'ESTORNO',
-          'TIPO_CARTAO': tipoCartao,
-          'NSU_ORIGINAL': nsuOriginal,
-          'VALOR_ORIGINAL': FormatUtils.formatAmount(trnAmount),
-          'DATA_ORIGINAL': dataTransacaoOriginal,
-        },
-      );
-
-      // Usar o use case para processar a transação
-      final useCase = StartTransactionUseCase(_repository);
-      final result = await useCase.execute(
-        data: transactionData,
-        autoProcess: true,
-        stopBeforeFinish: true, // Transação pendente para antes da finalização
-      );
-
-      if (!result.isSuccess) {
-        // Verificar se é um código de cancelamento específico
-        final errorCode = result.response.clisitefStatus;
-        if (CliSiTefErrorCode.isCancellationCode(errorCode)) {
-          throw _createCancellationException(errorCode, result.errorMessage);
-        }
-
-        throw CliSiTefException.fromCode(
-          errorCode,
-          details: result.errorMessage,
-          originalError: result.response,
+      final currentSession = sessionId ?? _currentSessionId;
+      if (currentSession == null) {
+        throw CliSiTefException.internalError(
+          details: 'Nenhuma sessão ativa para cancelar',
         );
       }
 
-      // Criar transação pendente com os campos mapeados
-      if (result.response.clisitefStatus < 0) {
-        throw CliSiTefException.fromCode(
-          result.response.clisitefStatus,
-          details: result.response.errorMessage,
-          originalError: result.response,
-        );
-      }
+      // Tentar encerrar a sessão diretamente para quebrar qualquer loop
+      try {
+        // Deletar a sessão no servidor
+        final deleteResponse = await _repository.deleteSession();
 
-      return CapturaTardiaTransaction(
-        invoiceNumber: transactionData.taxInvoiceNumber,
-        sessionId: result.response.sessionId ?? _currentSessionId!,
-        response: result.response,
-        repository: _repository,
-        clisitefFields: result.clisitefFields ?? CliSiTefResponse(),
-        invoiceDate: transactionData.taxInvoiceDate,
-        invoiceTime: transactionData.taxInvoiceTime,
-      );
+        // Limpar estado local independentemente do resultado
+        _currentSessionId = null;
+
+        return deleteResponse.isServiceSuccess;
+      } catch (e) {
+        // Se falhar, pelo menos limpar o estado local
+        _currentSessionId = null;
+        return true; // Considerar sucesso pois limpou o estado local
+      }
     } catch (e) {
       // Se já é uma CliSiTefException, rethrow
       if (e is CliSiTefException) {
@@ -311,13 +251,12 @@ class CliSiTefServiceCapturaTardia {
 
       // Converter erro genérico para CliSiTefException
       throw CliSiTefException.internalError(
-        details: 'Erro inesperado no estorno: $e',
+        details: 'Erro ao cancelar operação: $e',
         originalError: e,
       );
     }
   }
 
-  /// Finaliza o serviço
   Future<void> dispose() async {
     try {
       if (_currentSessionId != null) {
