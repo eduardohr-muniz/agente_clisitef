@@ -152,9 +152,11 @@ class CliSiTefConfig {
       errors.add('storeId é obrigatório');
     } else if (storeId.length != 8) {
       errors.add('storeId deve ter 8 dígitos');
-    } else if (!RegExp(r'^\d{8}$').hasMatch(storeId)) {
-      errors.add('storeId deve conter apenas dígitos');
     }
+
+    // else if (!RegExp(r'^\d{8}$').hasMatch(storeId)) {
+    //   errors.add('storeId deve conter apenas dígitos');
+    // }
 
     // Validar terminalId
     if (terminalId.isEmpty) {
