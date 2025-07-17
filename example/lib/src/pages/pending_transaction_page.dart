@@ -45,14 +45,18 @@ class _PendingTransactionPageState extends State<PendingTransactionPage> {
       final pendingTransaction = await _controller.startPendingTransaction(_selectedTransactionType);
 
       if (pendingTransaction != null) {
+        _showSuccessSnackbar('🚀 Transação $_selectedTransactionType iniciada!');
+
         // Verificar se precisa de interação do usuário
         final response = pendingTransaction.originalResponse;
         if (response.command != null && response.shouldContinue) {
           _showInteractionDialog(response);
         }
+      } else {
+        _showErrorSnackbar('❌ Falha ao iniciar transação');
       }
     } catch (e) {
-      // Erro tratado pelo MessageManager
+      _showErrorSnackbar('❌ Erro ao iniciar transação: ${e.toString()}');
     }
   }
 
@@ -77,20 +81,30 @@ class _PendingTransactionPageState extends State<PendingTransactionPage> {
   /// Confirma a transação
   Future<void> _confirmTransaction() async {
     try {
-      // final result = await _controller.confirmTransaction();
-      // Mensagens tratadas pelo MessageManager
+      final result = await _controller.confirmTransaction();
+
+      if (result != null && result.isServiceSuccess) {
+        _showSuccessSnackbar('✅ Transação confirmada com sucesso!');
+      } else {
+        _showErrorSnackbar('❌ Erro ao confirmar transação');
+      }
     } catch (e) {
-      // Erro tratado pelo MessageManager
+      _showErrorSnackbar('❌ Erro ao confirmar: ${e.toString()}');
     }
   }
 
   /// Cancela a transação
   Future<void> _cancelTransaction() async {
     try {
-      // final result = await _controller.cancelTransaction();
-      // Mensagens tratadas pelo MessageManager
+      final result = await _controller.cancelTransaction();
+
+      if (result != null && result.isServiceSuccess) {
+        _showSuccessSnackbar('✅ Transação cancelada com sucesso!');
+      } else {
+        _showErrorSnackbar('❌ Erro ao cancelar transação');
+      }
     } catch (e) {
-      // Erro tratado pelo MessageManager
+      _showErrorSnackbar('❌ Erro ao cancelar: ${e.toString()}');
     }
   }
 
@@ -98,9 +112,9 @@ class _PendingTransactionPageState extends State<PendingTransactionPage> {
   Future<void> _simulateCupom() async {
     try {
       await _controller.simulateCupomEmission();
-      // Mensagens tratadas pelo MessageManager
+      _showSuccessSnackbar('📄 Cupom fiscal emitido com sucesso!');
     } catch (e) {
-      // Erro tratado pelo MessageManager
+      _showErrorSnackbar('❌ Erro ao emitir cupom: ${e.toString()}');
     }
   }
 
@@ -112,6 +126,40 @@ class _PendingTransactionPageState extends State<PendingTransactionPage> {
       builder: (context) => InteractionDialog(
         response: response,
         onContinue: _continueTransaction,
+      ),
+    );
+  }
+
+  /// Exibe snackbar de sucesso
+  void _showSuccessSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        action: SnackBarAction(
+          label: 'OK',
+          textColor: Colors.white,
+          onPressed: () {},
+        ),
+      ),
+    );
+  }
+
+  /// Exibe snackbar de erro
+  void _showErrorSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+        action: SnackBarAction(
+          label: 'OK',
+          textColor: Colors.white,
+          onPressed: () {},
+        ),
       ),
     );
   }
