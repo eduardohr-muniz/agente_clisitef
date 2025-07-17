@@ -219,6 +219,104 @@ class CliSiTefServiceCapturaTardia {
     }
   }
 
+  /// Inicia uma transação de estorno de pagamento já confirmado
+  ///
+  /// Este método usa o Menu Gerencial (functionId: 110) para navegar
+  /// até a opção de cancelamento de transação já processada.
+  ///
+  /// [valorOriginal] - Valor da transação original em centavos
+  /// [dataTransacaoOriginal] - Data da transação original no formato DDMMAAAA
+  /// [nsuOriginal] - NSU da transação a ser estornada
+  /// [tipoCartao] - Tipo do cartão: 'DEBITO' ou 'CREDITO' (padrão: 'CREDITO')
+  /// [codigoSupervisor] - Código do supervisor (padrão: '0')
+  ///
+  /// Retorna [CapturaTardiaTransaction] pendente para confirmação posterior
+  Future<CapturaTardiaTransaction?> startEstornoTransaction({
+    required double trnAmount,
+    required String dataTransacaoOriginal,
+    required String nsuOriginal,
+    String tipoCartao = 'CREDITO',
+    String codigoSupervisor = '0',
+  }) async {
+    try {
+      if (!_isInitialized) {
+        throw CliSiTefException.serviceNotInitialized(
+          details: 'Serviço não foi inicializado antes de iniciar estorno',
+        );
+      }
+
+      // Criar dados da transação para estorno usando Menu Gerencial (110)
+      final now = DateTime.now();
+      final transactionData = TransactionData.administrative(
+        functionId: 110, // Menu Gerencial
+        taxInvoiceNumber: 'ESTORNO_${nsuOriginal}_${now.millisecondsSinceEpoch}',
+        taxInvoiceDate: now,
+        taxInvoiceTime: now,
+        cashierOperator: codigoSupervisor,
+        trnAdditionalParameters: {
+          // Parâmetros específicos para estorno
+          'TIPO_OPERACAO': 'ESTORNO',
+          'TIPO_CARTAO': tipoCartao,
+          'NSU_ORIGINAL': nsuOriginal,
+          'VALOR_ORIGINAL': FormatUtils.formatAmount(trnAmount),
+          'DATA_ORIGINAL': dataTransacaoOriginal,
+        },
+      );
+
+      // Usar o use case para processar a transação
+      final useCase = StartTransactionUseCase(_repository);
+      final result = await useCase.execute(
+        data: transactionData,
+        autoProcess: true,
+        stopBeforeFinish: true, // Transação pendente para antes da finalização
+      );
+
+      if (!result.isSuccess) {
+        // Verificar se é um código de cancelamento específico
+        final errorCode = result.response.clisitefStatus;
+        if (CliSiTefErrorCode.isCancellationCode(errorCode)) {
+          throw _createCancellationException(errorCode, result.errorMessage);
+        }
+
+        throw CliSiTefException.fromCode(
+          errorCode,
+          details: result.errorMessage,
+          originalError: result.response,
+        );
+      }
+
+      // Criar transação pendente com os campos mapeados
+      if (result.response.clisitefStatus < 0) {
+        throw CliSiTefException.fromCode(
+          result.response.clisitefStatus,
+          details: result.response.errorMessage,
+          originalError: result.response,
+        );
+      }
+
+      return CapturaTardiaTransaction(
+        invoiceNumber: transactionData.taxInvoiceNumber,
+        sessionId: result.response.sessionId ?? _currentSessionId!,
+        response: result.response,
+        repository: _repository,
+        clisitefFields: result.clisitefFields ?? CliSiTefResponse(),
+        invoiceDate: transactionData.taxInvoiceDate,
+        invoiceTime: transactionData.taxInvoiceTime,
+      );
+    } catch (e) {
+      // Se já é uma CliSiTefException, rethrow
+      if (e is CliSiTefException) {
+        rethrow;
+      }
+
+      // Converter erro genérico para CliSiTefException
+      throw CliSiTefException.internalError(
+        details: 'Erro inesperado no estorno: $e',
+        originalError: e,
+      );
+    }
+  }
+
   /// Finaliza o serviço
   Future<void> dispose() async {
     try {
