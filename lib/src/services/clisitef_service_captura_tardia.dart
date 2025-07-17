@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'package:agente_clisitef/agente_clisitef.dart';
 import 'package:agente_clisitef/src/core/exceptions/clisitef_exception.dart';
 import 'package:agente_clisitef/src/core/exceptions/clisitef_error_codes.dart';
+import 'package:agente_clisitef/src/core/utils/format_utils.dart';
 import 'package:agente_clisitef/src/models/clisitef_config.dart';
 import 'package:agente_clisitef/src/models/clisitef_response.dart';
 import 'package:agente_clisitef/src/models/captura_tardia_transaction.dart';
@@ -138,6 +140,25 @@ class CliSiTefServiceCapturaTardia {
         originalError: e,
       );
     }
+  }
+
+  Future<bool> cancelarTransacao({
+    required String taxInvoiceNumber,
+    required DateTime taxInvoiceDate,
+    required DateTime taxInvoiceTime,
+  }) async {
+    if (!_isInitialized) {
+      throw Exception('Serviço não inicializado');
+    }
+    return await _repository.finishEstornandoTransaction(
+      confirm: 0,
+      sitefIp: _config.sitefIp,
+      storeId: _config.storeId,
+      terminalId: _config.terminalId,
+      taxInvoiceNumber: taxInvoiceNumber,
+      taxInvoiceDate: FormatUtils.formatDate(taxInvoiceDate),
+      taxInvoiceTime: FormatUtils.formatTime(taxInvoiceTime),
+    );
   }
 
   /// Cria uma exceção de cancelamento baseada no código de erro

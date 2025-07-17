@@ -197,6 +197,44 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
   }
 
   @override
+  Future<bool> finishEstornandoTransaction(
+      {required int confirm,
+      required String sitefIp,
+      required String storeId,
+      required String terminalId,
+      required String taxInvoiceNumber,
+      required String taxInvoiceDate,
+      required String taxInvoiceTime}) async {
+    try {
+      final body = {
+        'confirm': confirm.toString(),
+        'sitefIp': sitefIp,
+        'storeId': storeId,
+        'terminalId': terminalId,
+        'taxInvoiceNumber': taxInvoiceNumber,
+        'taxInvoiceDate': taxInvoiceDate,
+        'taxInvoiceTime': taxInvoiceTime,
+      };
+
+      // Fazer a requisição POST para o endpoint finishTransaction
+      final response = await _dio.post(
+        CliSiTefConstants.FINISH_TRANSACTION_ENDPOINT,
+        data: body,
+        options: Options(
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          validateStatus: (status) => status != null && status < 500,
+        ),
+      );
+
+      return response.data['clisitefStatus'] == 1;
+    } on DioException catch (e) {
+      _talker.error('Erro de comunicação ao finalizar transação de estorno', e);
+
+      return false;
+    }
+  }
+
+  @override
   Future<TransactionResponse> createSession() async {
     try {
       final response = await _dio.post(

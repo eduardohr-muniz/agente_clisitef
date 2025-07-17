@@ -24,6 +24,15 @@ abstract class CliSiTefRepository {
     String? taxInvoiceDate,
     String? taxInvoiceTime,
   });
+  Future<bool> finishEstornandoTransaction({
+    required int confirm,
+    required String sitefIp,
+    required String storeId,
+    required String terminalId,
+    required String taxInvoiceNumber,
+    required String taxInvoiceDate,
+    required String taxInvoiceTime,
+  });
 
   /// Cria uma nova sessão
   Future<TransactionResponse> createSession();
