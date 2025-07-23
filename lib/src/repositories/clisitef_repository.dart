@@ -13,6 +13,7 @@ abstract class CliSiTefRepository {
   Future<TransactionResponse> continueTransaction({
     required String sessionId,
     required int command,
+    int? continueCode,
     String? data,
   });
 

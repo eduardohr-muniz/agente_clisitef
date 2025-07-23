@@ -30,6 +30,20 @@ class CliSiTefServiceCapturaTardia {
     );
   }
 
+  Future<void> _createSession() async {
+    final sessionResponse = await _repository.createSession();
+
+    if (!sessionResponse.isServiceSuccess) {
+      throw CliSiTefException.fromCode(
+        sessionResponse.clisitefStatus,
+        details: 'Erro ao criar sessão: ${sessionResponse.errorMessage}',
+        originalError: sessionResponse,
+      );
+    }
+
+    _currentSessionId = sessionResponse.sessionId;
+  }
+
   /// Inicializa o serviço
   Future<bool> initialize() async {
     try {
@@ -42,17 +56,7 @@ class CliSiTefServiceCapturaTardia {
       }
 
       // Criar sessão
-      final sessionResponse = await _repository.createSession();
-
-      if (!sessionResponse.isServiceSuccess) {
-        throw CliSiTefException.fromCode(
-          sessionResponse.clisitefStatus,
-          details: 'Erro ao criar sessão: ${sessionResponse.errorMessage}',
-          originalError: sessionResponse,
-        );
-      }
-
-      _currentSessionId = sessionResponse.sessionId;
+      await _createSession();
       _isInitialized = true;
 
       return true;
@@ -79,13 +83,25 @@ class CliSiTefServiceCapturaTardia {
           details: 'Serviço não foi inicializado antes de iniciar transação',
         );
       }
-
+      await _createSession();
+      final dataWithSessionId = TransactionData(
+        functionId: data.functionId,
+        trnAmount: data.trnAmount,
+        taxInvoiceNumber: data.taxInvoiceNumber,
+        taxInvoiceDate: data.taxInvoiceDate,
+        taxInvoiceTime: data.taxInvoiceTime,
+        cashierOperator: data.cashierOperator,
+        trnAdditionalParameters: data.trnAdditionalParameters,
+        trnInitParameters: data.trnInitParameters,
+        sessionId: _currentSessionId,
+      );
       // Usar o use case para processar a transação com seleção inteligente de PIX
       final useCase = StartTransactionUseCase(_repository, useSmartPixSelection: true);
       final result = await useCase.execute(
-        data: data,
+        data: dataWithSessionId,
         autoProcess: true,
-        stopBeforeFinish: true, // Transação pendente para antes da finalização
+        stopBeforeFinish: true,
+        // Transação pendente para antes da finalização
       );
 
       if (!result.isSuccess) {
@@ -231,13 +247,12 @@ class CliSiTefServiceCapturaTardia {
 
       // Tentar encerrar a sessão diretamente para quebrar qualquer loop
       try {
-        // Deletar a sessão no servidor
-        final deleteResponse = await _repository.deleteSession();
+        await _repository.continueTransaction(command: -1, sessionId: currentSession, data: '', continueCode: -1);
 
         // Limpar estado local independentemente do resultado
         _currentSessionId = null;
 
-        return deleteResponse.isServiceSuccess;
+        return true;
       } catch (e) {
         // Se falhar, pelo menos limpar o estado local
         _currentSessionId = null;

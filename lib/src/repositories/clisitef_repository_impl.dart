@@ -103,13 +103,14 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
     required String sessionId,
     required int command,
     String? data,
+    int? continueCode = 0,
   }) async {
     try {
       // O parâmetro continue deve ser sempre "0" para continuar o fluxo
       // O command é apenas para identificar o tipo de comando
       final body = {
         CliSiTefConstants.PARAM_SESSION_ID: sessionId,
-        CliSiTefConstants.PARAM_CONTINUE: '0',
+        CliSiTefConstants.PARAM_CONTINUE: continueCode.toString(),
         'data': data ?? '', // Sempre envia 'data', mesmo que vazio
       };
 

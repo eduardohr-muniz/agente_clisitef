@@ -280,7 +280,7 @@ class PendingTransactionController extends ChangeNotifier {
     try {
       _messageManager.messageCashier.value = 'Cancelando operação em andamento...';
 
-      final result = await _service!.cancelOperationInProgress(sessionId: _sessionId);
+      final result = await _service!.cancelOperationInProgress();
 
       if (result) {
         _messageManager.messageCashier.value = 'Operação cancelada pelo operador';
