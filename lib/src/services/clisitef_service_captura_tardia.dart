@@ -247,7 +247,7 @@ class CliSiTefServiceCapturaTardia {
 
       // Tentar encerrar a sessão diretamente para quebrar qualquer loop
       try {
-        await _repository.continueTransaction(command: -1, sessionId: currentSession, data: '', continueCode: -1);
+        await _repository.continueTransaction(command: 0, sessionId: currentSession, data: '', continueCode: -1);
 
         // Limpar estado local independentemente do resultado
         _currentSessionId = null;
