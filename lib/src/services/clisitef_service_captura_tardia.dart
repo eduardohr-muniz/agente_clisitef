@@ -219,8 +219,13 @@ class CliSiTefServiceCapturaTardia {
       final isConnected = response.isServiceSuccess;
       return isConnected;
     } catch (e) {
+      // Se já é uma CliSiTefException de conexão, rethrow
+      if (e is CliSiTefException && e.message.contains('Falha na comunicação')) {
+        rethrow;
+      }
+
       throw CliSiTefException.connectionError(
-        details: 'Erro ao verificar conectividade: $e',
+        details: 'Falha na comunicação',
         originalError: e,
       );
     }

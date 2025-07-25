@@ -21,6 +21,14 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
     _initializeDio(config.talker);
   }
 
+  /// Verifica se o erro é de timeout ou conexão
+  bool _isConnectionOrTimeoutError(DioException e) {
+    return e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.sendTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.connectionError;
+  }
+
   /// Inicializa o Dio com configurações
   void _initializeDio(Talker? talker) {
     _talker = talker ?? Talker();
@@ -83,6 +91,15 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       return transactionResponse;
     } on DioException catch (e) {
       _talker.error('Erro ao iniciar transação', e);
+
+      // Verifica se é erro de timeout ou conexão
+      if (_isConnectionOrTimeoutError(e)) {
+        throw CliSiTefException.connectionError(
+          details: 'Falha na comunicação',
+          originalError: e,
+        );
+      }
+
       throw CliSiTefException(
         errorCode: CliSiTefErrorCode.fromCode(e.response?.statusCode ?? -1),
         message: 'Erro ao iniciar transação: ${e.message}',
@@ -125,6 +142,15 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       return transactionResponse;
     } on DioException catch (e) {
       _talker.error('Erro ao continuar transação', e);
+
+      // Verifica se é erro de timeout ou conexão
+      if (_isConnectionOrTimeoutError(e)) {
+        throw CliSiTefException.connectionError(
+          details: 'Falha na comunicação',
+          originalError: e,
+        );
+      }
+
       throw CliSiTefException(
         errorCode: CliSiTefErrorCode.fromCode(e.response?.statusCode ?? -1),
         message: 'Erro ao continuar transação: ${e.message}',
@@ -182,6 +208,15 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       return transactionResponse;
     } on DioException catch (e) {
       _talker.error('Erro ao finalizar transação', e);
+
+      // Verifica se é erro de timeout ou conexão
+      if (_isConnectionOrTimeoutError(e)) {
+        throw CliSiTefException.connectionError(
+          details: 'Falha na comunicação',
+          originalError: e,
+        );
+      }
+
       throw CliSiTefException(
         errorCode: CliSiTefErrorCode.fromCode(e.response?.statusCode ?? -1),
         message: 'Erro ao finalizar transação: ${e.message}',
@@ -231,6 +266,11 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
     } on DioException catch (e) {
       _talker.error('Erro de comunicação ao finalizar transação de estorno', e);
 
+      // Verifica se é erro de timeout ou conexão - para este método retorna false
+      if (_isConnectionOrTimeoutError(e)) {
+        _talker.error('Falha na comunicação ao finalizar transação de estorno', e);
+      }
+
       return false;
     }
   }
@@ -256,6 +296,15 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       return transactionResponse;
     } on DioException catch (e) {
       _talker.error('Erro ao criar sessão', e);
+
+      // Verifica se é erro de timeout ou conexão
+      if (_isConnectionOrTimeoutError(e)) {
+        throw CliSiTefException.connectionError(
+          details: 'Falha na comunicação',
+          originalError: e,
+        );
+      }
+
       throw CliSiTefException(
         errorCode: CliSiTefErrorCode.fromCode(e.response?.statusCode ?? -1),
         message: 'Erro ao criar sessão: ${e.message}',
@@ -286,6 +335,15 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       return transactionResponse;
     } on DioException catch (e) {
       _talker.error('Erro ao consultar sessão', e);
+
+      // Verifica se é erro de timeout ou conexão
+      if (_isConnectionOrTimeoutError(e)) {
+        throw CliSiTefException.connectionError(
+          details: 'Falha na comunicação',
+          originalError: e,
+        );
+      }
+
       throw CliSiTefException(
         errorCode: CliSiTefErrorCode.fromCode(e.response?.statusCode ?? -1),
         message: 'Erro ao consultar sessão: ${e.message}',
@@ -315,6 +373,15 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       return transactionResponse;
     } on DioException catch (e) {
       _talker.error('Erro ao excluir sessão', e);
+
+      // Verifica se é erro de timeout ou conexão
+      if (_isConnectionOrTimeoutError(e)) {
+        throw CliSiTefException.connectionError(
+          details: 'Falha na comunicação',
+          originalError: e,
+        );
+      }
+
       throw CliSiTefException(
         errorCode: CliSiTefErrorCode.fromCode(e.response?.statusCode ?? -1),
         message: 'Erro ao excluir sessão: ${e.message}',
@@ -340,6 +407,15 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       return transactionResponse;
     } on DioException catch (e) {
       _talker.error('Erro ao consultar estado', e);
+
+      // Verifica se é erro de timeout ou conexão
+      if (_isConnectionOrTimeoutError(e)) {
+        throw CliSiTefException.connectionError(
+          details: 'Falha na comunicação',
+          originalError: e,
+        );
+      }
+
       throw CliSiTefException(
         errorCode: CliSiTefErrorCode.fromCode(e.response?.statusCode ?? -1),
         message: 'Erro ao consultar estado: ${e.message}',
@@ -368,6 +444,15 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       return transactionResponse;
     } on DioException catch (e) {
       _talker.error('Erro ao consultar versão', e);
+
+      // Verifica se é erro de timeout ou conexão
+      if (_isConnectionOrTimeoutError(e)) {
+        throw CliSiTefException.connectionError(
+          details: 'Falha na comunicação',
+          originalError: e,
+        );
+      }
+
       throw CliSiTefException(
         errorCode: CliSiTefErrorCode.fromCode(e.response?.statusCode ?? -1),
         message: 'Erro ao consultar versão: ${e.message}',
@@ -397,6 +482,15 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       return transactionResponse;
     } on DioException catch (e) {
       _talker.error('Erro ao abrir PinPad', e);
+
+      // Verifica se é erro de timeout ou conexão
+      if (_isConnectionOrTimeoutError(e)) {
+        throw CliSiTefException.connectionError(
+          details: 'Falha na comunicação',
+          originalError: e,
+        );
+      }
+
       throw CliSiTefException(
         errorCode: CliSiTefErrorCode.fromCode(e.response?.statusCode ?? -1),
         message: 'Erro ao abrir PinPad: ${e.message}',
@@ -426,6 +520,15 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       return transactionResponse;
     } on DioException catch (e) {
       _talker.error('Erro ao fechar PinPad', e);
+
+      // Verifica se é erro de timeout ou conexão
+      if (_isConnectionOrTimeoutError(e)) {
+        throw CliSiTefException.connectionError(
+          details: 'Falha na comunicação',
+          originalError: e,
+        );
+      }
+
       throw CliSiTefException(
         errorCode: CliSiTefErrorCode.fromCode(e.response?.statusCode ?? -1),
         message: 'Erro ao fechar PinPad: ${e.message}',
@@ -455,6 +558,15 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       return transactionResponse;
     } on DioException catch (e) {
       _talker.error('Erro ao verificar presença do PinPad', e);
+
+      // Verifica se é erro de timeout ou conexão
+      if (_isConnectionOrTimeoutError(e)) {
+        throw CliSiTefException.connectionError(
+          details: 'Falha na comunicação',
+          originalError: e,
+        );
+      }
+
       throw CliSiTefException(
         errorCode: CliSiTefErrorCode.fromCode(e.response?.statusCode ?? -1),
         message: 'Erro ao verificar presença do PinPad: ${e.message}',
@@ -490,6 +602,15 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       return transactionResponse;
     } on DioException catch (e) {
       _talker.error('Erro ao ler confirmação Sim/Não do PinPad', e);
+
+      // Verifica se é erro de timeout ou conexão
+      if (_isConnectionOrTimeoutError(e)) {
+        throw CliSiTefException.connectionError(
+          details: 'Falha na comunicação',
+          originalError: e,
+        );
+      }
+
       throw CliSiTefException(
         errorCode: CliSiTefErrorCode.fromCode(e.response?.statusCode ?? -1),
         message: 'Erro ao ler confirmação Sim/Não do PinPad: ${e.message}',
@@ -525,6 +646,15 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       return transactionResponse;
     } on DioException catch (e) {
       _talker.error('Erro ao definir mensagem do PinPad', e);
+
+      // Verifica se é erro de timeout ou conexão
+      if (_isConnectionOrTimeoutError(e)) {
+        throw CliSiTefException.connectionError(
+          details: 'Falha na comunicação',
+          originalError: e,
+        );
+      }
+
       throw CliSiTefException(
         errorCode: CliSiTefErrorCode.fromCode(e.response?.statusCode ?? -1),
         message: 'Erro ao definir mensagem do PinPad: ${e.message}',
