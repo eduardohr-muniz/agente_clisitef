@@ -8,6 +8,7 @@ import 'widgets/transaction_data_card.dart';
 import 'widgets/action_buttons_card.dart';
 import 'widgets/interaction_dialog.dart';
 import 'widgets/message_display_widget.dart';
+import 'widgets/reset_type_selector.dart';
 
 class PendingTransactionPage extends StatefulWidget {
   const PendingTransactionPage({super.key});
@@ -19,6 +20,7 @@ class PendingTransactionPage extends StatefulWidget {
 class _PendingTransactionPageState extends State<PendingTransactionPage> {
   late final PendingTransactionController _controller;
   String _selectedTransactionType = 'PIX';
+  PinPadResetType _selectedResetType = PinPadResetType.limited;
 
   @override
   void initState() {
@@ -137,6 +139,25 @@ class _PendingTransactionPageState extends State<PendingTransactionPage> {
     }
   }
 
+  /// Reseta o PinPad quando está travado
+  Future<void> _resetPinPad() async {
+    // Confirmar reset com o usuário
+    final shouldReset = await _showResetPinPadConfirmationDialog();
+    if (!shouldReset) return;
+
+    try {
+      final result = await _controller.resetPinPad(resetType: _selectedResetType);
+
+      if (result) {
+        _showSuccessSnackbar('${_selectedResetType.icon} ${_selectedResetType.displayName} executado com sucesso!');
+      } else {
+        _showErrorSnackbar('❌ Falha ao executar ${_selectedResetType.displayName}');
+      }
+    } catch (e) {
+      _showErrorSnackbar('❌ Erro ao executar ${_selectedResetType.displayName}: ${e.toString()}');
+    }
+  }
+
   /// Exibe diálogo de interação
   void _showInteractionDialog(TransactionResponse response) {
     showDialog(
@@ -168,6 +189,32 @@ class _PendingTransactionPageState extends State<PendingTransactionPage> {
                 onPressed: () => Navigator.of(context).pop(true),
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                 child: const Text('Sim, Cancelar'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
+  /// Mostra diálogo de confirmação para resetar PinPad
+  Future<bool> _showResetPinPadConfirmationDialog() async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('${_selectedResetType.icon} ${_selectedResetType.displayName}'),
+            content: Text(
+              'Tem certeza que deseja executar ${_selectedResetType.displayName}?\n\n'
+              '${_selectedResetType.description}',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                child: const Text('Confirmar'),
               ),
             ],
           ),
@@ -276,30 +323,53 @@ class _PendingTransactionPageState extends State<PendingTransactionPage> {
             ),
             const SizedBox(height: 16),
 
-            // Botão de Cancelamento de Operação em Progresso
+            // Seletor de Reset do PinPad
+            ResetTypeSelector(
+              selectedType: _selectedResetType,
+              onTypeChanged: (PinPadResetType resetType) {
+                setState(() {
+                  _selectedResetType = resetType;
+                });
+              },
+              onResetPressed: _resetPinPad,
+              enabled: _controller.isServiceInitialized && !_controller.isLoading,
+            ),
+            const SizedBox(height: 16),
+
+            // Operações de Emergência (cancelar operação)
             if (_controller.isLoading) ...[
               Card(
+                color: Colors.red.shade50,
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        'Cancelamento de Operação',
-                        style: Theme.of(context).textTheme.titleMedium,
+                      Row(
+                        children: [
+                          Icon(Icons.warning, color: Colors.red.shade700),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Operação em Progresso',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: Colors.red.shade700,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       const Text(
                         'Use este botão para cancelar operações que estão em loop ou travadas.',
                         style: TextStyle(fontSize: 12, color: Colors.grey),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       ElevatedButton.icon(
                         onPressed: _cancelOperationInProgress,
                         icon: const Icon(Icons.stop),
                         label: const Text('🛑 CANCELAR OPERAÇÃO'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
+                          backgroundColor: Colors.red,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.all(16),
                         ),
@@ -308,8 +378,8 @@ class _PendingTransactionPageState extends State<PendingTransactionPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
             ],
+            const SizedBox(height: 16),
 
             // Instructions Card
             Card(
@@ -329,7 +399,15 @@ class _PendingTransactionPageState extends State<PendingTransactionPage> {
                       '3. Clique em "Iniciar Transação Pendente"\n'
                       '4. Acompanhe as mensagens em tempo real\n'
                       '5. Simule a emissão do cupom fiscal\n'
-                      '6. Confirme ou cancele a transação',
+                      '6. Confirme ou cancele a transação\n'
+                      '7. Use diferentes tipos de reset do PinPad conforme necessário:\n'
+                      '   • Reset Básico: Para travamentos gerais\n'
+                      '   • Reset Completo: Limpa sessão + básico\n'
+                      '   • Reset Comunicação: Apenas reconecta\n'
+                      '   • Reset Estado: Limpa transações pendentes\n'
+                      '   • Reset Emergência: Força reset ignorando erros\n'
+                      '   • Reset Soft: Remove cartão + mensagem padrão\n'
+                      '   • Reset Limitado: ⭐ Recomendado para servidores com endpoints limitados',
                     ),
                   ],
                 ),

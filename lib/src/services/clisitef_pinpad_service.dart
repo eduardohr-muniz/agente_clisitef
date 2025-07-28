@@ -302,6 +302,67 @@ class CliSiTefPinPadService {
     }
   }
 
+  /// Reseta o PinPad liberando-o de possível travamento
+  ///
+  /// Este método executa uma sequência de operações para liberar o PinPad:
+  /// 1. Fecha a comunicação atual
+  /// 2. Remove qualquer cartão inserido
+  /// 3. Reabre a comunicação
+  /// 4. Define mensagem padrão
+  Future<bool> resetPinPad() async {
+    try {
+      if (!_repository.isInitialized) {
+        _messageManager.processError(errorMessage: 'Repositório não inicializado');
+        return false;
+      }
+
+      final sessionId = _repository.currentSessionId;
+      if (sessionId == null) {
+        _messageManager.processError(errorMessage: 'Nenhuma sessão ativa');
+        return false;
+      }
+
+      _messageManager.messageCashier.value = 'Resetando PinPad...';
+      bool resetSuccess = false;
+
+      try {
+        // Passo 1: Fechar comunicação
+        try {
+          await _repository.closePinPad(sessionId: sessionId);
+        } catch (e) {
+          // Ignorar erro de fechamento
+        }
+
+        // Passo 2: Remover cartão
+        try {
+          await _repository.removePinPadCard(sessionId: sessionId);
+        } catch (e) {
+          // Ignorar erro de remoção
+        }
+
+        // Passo 3: Reabrir comunicação
+        final openResponse = await _repository.openPinPad(sessionId: sessionId);
+        if (openResponse.isServiceSuccess) {
+          resetSuccess = true;
+          _messageManager.messageCashier.value = '✅ PinPad resetado com sucesso';
+        }
+
+        // Passo 4: Definir mensagem padrão
+        if (resetSuccess) {
+          await setMessage('Aguardando cartão...');
+        }
+
+        return resetSuccess;
+      } catch (e) {
+        _messageManager.processError(errorMessage: 'Erro ao resetar PinPad: $e');
+        return false;
+      }
+    } catch (e) {
+      _messageManager.processError(errorMessage: 'Erro inesperado ao resetar PinPad: $e');
+      return false;
+    }
+  }
+
   // Métodos auxiliares para aguardar eventos do PinPad
   Future<String?> _waitForCardInsertion() async {
     // TODO: Implementar aguardo de inserção de cartão

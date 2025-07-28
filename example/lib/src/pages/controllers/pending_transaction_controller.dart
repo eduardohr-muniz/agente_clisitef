@@ -296,6 +296,36 @@ class PendingTransactionController extends ChangeNotifier {
     }
   }
 
+  /// Reseta o PinPad quando ele fica preso em uma transação
+  Future<bool> resetPinPad({PinPadResetType resetType = PinPadResetType.basic}) async {
+    if (!_validateService()) return false;
+
+    _setLoading(true);
+    _messageManager.messageCashier.value = 'Executando ${resetType.displayName}...';
+
+    try {
+      final result = await _service!.resetPinPad(resetType: resetType);
+
+      _setLoading(false);
+
+      if (result) {
+        _messageManager.messageCashier.value = '✅ ${resetType.displayName} executado com sucesso!\nPinPad liberado e pronto para uso.';
+        return true;
+      } else {
+        _messageManager.messageCashier.value = '❌ Falha ao executar ${resetType.displayName}\nTente novamente ou verifique a conexão.';
+        return false;
+      }
+    } catch (e) {
+      _setLoading(false);
+      if (e is CliSiTefException) {
+        _messageManager.processError(errorMessage: 'Erro ao executar ${resetType.displayName}: ${e.message}');
+      } else {
+        _messageManager.processError(errorMessage: 'Erro ao executar ${resetType.displayName}: ${e.toString()}');
+      }
+      return false;
+    }
+  }
+
   /// Libera recursos
   @override
   void dispose() {

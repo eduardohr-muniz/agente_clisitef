@@ -71,6 +71,12 @@ abstract class CliSiTefRepository {
     required String displayMessage,
   });
 
+  /// Remove cartão inserido no PinPad
+  Future<TransactionResponse> removePinPadCard({required String sessionId});
+
+  /// Verifica se o endpoint de remoção de cartão está disponível
+  Future<bool> isRemoveCardEndpointAvailable();
+
   /// Verifica a presença do PinPad (método auxiliar)
   Future<bool> checkPinPadPresence();
 

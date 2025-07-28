@@ -20,7 +20,8 @@ export 'src/repositories/clisitef_repository_impl.dart';
 
 // Services
 export 'src/services/clisitef_core_service.dart';
-export 'src/services/clisitef_pinpad_service.dart';
+export 'src/services/clisitef_pinpad_service.dart' hide CardReadResult, PasswordReadResult;
 export 'src/services/clisitef_service_agente.dart';
 export 'src/services/clisitef_service_captura_tardia.dart';
+export 'src/services/pinpad_service.dart' show PinPadService, CardReadResult, PasswordReadResult;
 export 'src/services/core/start_transaction_usecase.dart';

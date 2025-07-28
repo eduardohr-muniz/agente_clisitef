@@ -438,7 +438,11 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       final response = await _dio.post(
         CliSiTefConstants.PINPAD_OPEN_ENDPOINT,
         data: {CliSiTefConstants.PARAM_SESSION_ID: sessionId},
-        options: Options(headers: {'Content-Type': 'application/x-www-form-urlencoded'}),
+        options: Options(
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          receiveTimeout: const Duration(seconds: 15), // Timeout menor para PinPad
+          sendTimeout: const Duration(seconds: 10),
+        ),
       );
 
       final transactionResponse = TransactionResponse.fromJson(response.data);
@@ -471,7 +475,11 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       final response = await _dio.post(
         CliSiTefConstants.PINPAD_CLOSE_ENDPOINT,
         data: {CliSiTefConstants.PARAM_SESSION_ID: sessionId},
-        options: Options(headers: {'Content-Type': 'application/x-www-form-urlencoded'}),
+        options: Options(
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          receiveTimeout: const Duration(seconds: 10), // Timeout menor para fechar
+          sendTimeout: const Duration(seconds: 5),
+        ),
       );
 
       final transactionResponse = TransactionResponse.fromJson(response.data);
@@ -589,23 +597,91 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
 
       return transactionResponse;
     } on DioException catch (e) {
-      _talker.error('Erro ao definir mensagem do PinPad', e);
+      _talker.error('Erro ao definir mensagem no PinPad', e);
 
       // Verifica se é erro de timeout ou conexão
       _isConnectionOrTimeoutError(e);
 
       throw CliSiTefException(
         errorCode: CliSiTefErrorCode.fromCode(e.response?.statusCode ?? -1),
-        message: 'Erro ao definir mensagem do PinPad: ${e.message}',
+        message: 'Erro ao definir mensagem no PinPad: ${e.message}',
         originalError: e,
       );
     } catch (e) {
-      _talker.error('Erro inesperado ao definir mensagem do PinPad', e);
+      _talker.error('Erro inesperado ao definir mensagem no PinPad', e);
       throw CliSiTefException(
         errorCode: CliSiTefErrorCode.unknownError,
-        message: 'Erro inesperado ao definir mensagem do PinPad: $e',
+        message: 'Erro inesperado ao definir mensagem no PinPad: $e',
         originalError: e,
       );
+    }
+  }
+
+  @override
+  Future<TransactionResponse> removePinPadCard({required String sessionId}) async {
+    try {
+      final response = await _dio.post(
+        CliSiTefConstants.PINPAD_REMOVE_CARD_ENDPOINT,
+        data: {CliSiTefConstants.PARAM_SESSION_ID: sessionId},
+        options: Options(
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          receiveTimeout: const Duration(seconds: 10), // Timeout menor para este endpoint
+        ),
+      );
+
+      final transactionResponse = TransactionResponse.fromJson(response.data);
+
+      return transactionResponse;
+    } on DioException catch (e) {
+      _talker.warning('Endpoint removeCard não disponível ou com problema', e);
+
+      // Se for erro 501 (Not Implemented), retornar sucesso simulado
+      if (e.response?.statusCode == 501) {
+        _talker.info('Endpoint removeCard não implementado no servidor, simulando sucesso');
+        return TransactionResponse(
+          serviceStatus: 0,
+          clisitefStatus: 0,
+          sessionId: sessionId,
+        );
+      }
+
+      // Verifica se é erro de timeout ou conexão
+      _isConnectionOrTimeoutError(e);
+
+      throw CliSiTefException(
+        errorCode: CliSiTefErrorCode.fromCode(e.response?.statusCode ?? -1),
+        message: 'Erro ao remover cartão do PinPad: ${e.message}',
+        originalError: e,
+      );
+    } catch (e) {
+      _talker.error('Erro inesperado ao remover cartão do PinPad', e);
+      throw CliSiTefException(
+        errorCode: CliSiTefErrorCode.unknownError,
+        message: 'Erro inesperado ao remover cartão do PinPad: $e',
+        originalError: e,
+      );
+    }
+  }
+
+  @override
+  Future<bool> isRemoveCardEndpointAvailable() async {
+    try {
+      // Fazer uma requisição de teste para verificar se o endpoint existe
+      final response = await _dio.post(
+        CliSiTefConstants.PINPAD_REMOVE_CARD_ENDPOINT,
+        data: {'sessionId': 'test'},
+        options: Options(
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          receiveTimeout: const Duration(seconds: 5),
+          validateStatus: (status) => status != null && status < 500, // Aceitar códigos até 499
+        ),
+      );
+
+      // Se chegou aqui sem erro 501, o endpoint existe
+      return response.statusCode != 501;
+    } catch (e) {
+      // Se deu erro 501 ou timeout, consideramos não disponível
+      return false;
     }
   }
 

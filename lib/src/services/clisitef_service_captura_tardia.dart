@@ -3,13 +3,15 @@ import 'package:agente_clisitef/agente_clisitef.dart';
 import 'package:agente_clisitef/src/core/exceptions/clisitef_error_codes.dart';
 import 'package:agente_clisitef/src/core/utils/format_utils.dart';
 import 'package:agente_clisitef/src/models/clisitef_response.dart';
+import 'package:agente_clisitef/src/core/constants/clisitef_constants.dart';
+import 'package:agente_clisitef/src/services/pinpad_service.dart';
 
 /// Serviço para transações pendentes de confirmação
 /// Permite iniciar uma transação e decidir posteriormente se confirmar ou cancelar
 class CliSiTefServiceCapturaTardia {
   late final CliSiTefRepository _repository;
   late final CliSiTefCoreService _coreService;
-  late final CliSiTefPinPadService _pinpadService;
+  late final PinPadService _pinpadService;
 
   final CliSiTefConfig _config;
   bool _isInitialized = false;
@@ -24,7 +26,7 @@ class CliSiTefServiceCapturaTardia {
       repository: _repository,
       config: config,
     );
-    _pinpadService = CliSiTefPinPadService(
+    _pinpadService = PinPadService(
       repository: _repository,
       config: config,
     );
@@ -204,13 +206,16 @@ class CliSiTefServiceCapturaTardia {
   CliSiTefCoreService get coreService => _coreService;
 
   /// Obtém o serviço PinPad
-  CliSiTefPinPadService get pinpadService => _pinpadService;
+  PinPadService get pinpadService => _pinpadService;
 
   /// Obtém a versão do SDK
   String get version => '1.0.0';
 
   /// Obtém o repositório (para controle manual do fluxo)
   CliSiTefRepository get repository => _repository;
+
+  /// Obtém o serviço de PinPad (para operações avançadas)
+  PinPadService get pinpadResetService => _pinpadService;
 
   /// Verifica a conectividade com o servidor
   Future<bool> checkConnectivity() async {
@@ -223,6 +228,188 @@ class CliSiTefServiceCapturaTardia {
         details: 'Erro ao verificar conectividade: $e',
         originalError: e,
       );
+    }
+  }
+
+  /// Abre o PinPad (delegando para o PinPadService)
+  Future<bool> openPinPad({String? sessionId}) async {
+    try {
+      if (!_isInitialized) {
+        return false;
+      }
+
+      _pinpadService.setCurrentSession(sessionId ?? _currentSessionId);
+      return await _pinpadService.openPinPad(sessionId: sessionId);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Fecha o PinPad (delegando para o PinPadService)
+  Future<bool> closePinPad({String? sessionId}) async {
+    try {
+      if (!_isInitialized) {
+        return false;
+      }
+
+      _pinpadService.setCurrentSession(sessionId ?? _currentSessionId);
+      return await _pinpadService.closePinPad(sessionId: sessionId);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Verifica se o PinPad está presente (delegando para o PinPadService)
+  Future<bool> isPinPadPresent({String? sessionId}) async {
+    try {
+      if (!_isInitialized) {
+        return false;
+      }
+
+      _pinpadService.setCurrentSession(sessionId ?? _currentSessionId);
+      return await _pinpadService.isPinPadPresent(sessionId: sessionId);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Define mensagem no PinPad (delegando para o PinPadService)
+  Future<bool> setPinPadMessage(String message, {String? sessionId}) async {
+    try {
+      if (!_isInitialized) {
+        return false;
+      }
+
+      _pinpadService.setCurrentSession(sessionId ?? _currentSessionId);
+      return await _pinpadService.setDisplayMessage(message, sessionId: sessionId);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Inicializa o PinPad (delegando para o PinPadService)
+  Future<bool> initializePinPad() async {
+    try {
+      if (!_isInitialized) {
+        return false;
+      }
+
+      _pinpadService.setCurrentSession(_currentSessionId);
+      return await _pinpadService.initialize();
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Verifica presença do PinPad (delegando para o PinPadService)
+  Future<bool> checkPinPadPresence() async {
+    try {
+      if (!_isInitialized) {
+        return false;
+      }
+
+      _pinpadService.setCurrentSession(_currentSessionId);
+      return await _pinpadService.checkPresence();
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Define mensagem no PinPad com validação (delegando para o PinPadService)
+  Future<int> setPinPadMessageValidated(String message) async {
+    try {
+      if (!_isInitialized) {
+        return -1;
+      }
+
+      _pinpadService.setCurrentSession(_currentSessionId);
+      return await _pinpadService.setMessage(message);
+    } catch (e) {
+      return -1;
+    }
+  }
+
+  /// Limpa mensagem do PinPad (delegando para o PinPadService)
+  Future<int> clearPinPadMessage() async {
+    try {
+      if (!_isInitialized) {
+        return -1;
+      }
+
+      _pinpadService.setCurrentSession(_currentSessionId);
+      return await _pinpadService.clearMessage();
+    } catch (e) {
+      return -1;
+    }
+  }
+
+  /// Lê cartão de forma segura (delegando para o PinPadService)
+  Future<CardReadResult> readCardSecure(String message) async {
+    try {
+      if (!_isInitialized) {
+        return CardReadResult.error('Serviço não inicializado');
+      }
+
+      _pinpadService.setCurrentSession(_currentSessionId);
+      return await _pinpadService.readCardSecure(message);
+    } catch (e) {
+      return CardReadResult.error('Erro ao ler cartão: $e');
+    }
+  }
+
+  /// Lê cartão com chip (delegando para o PinPadService)
+  Future<CardReadResult> readChipCard(String message, int modality) async {
+    try {
+      if (!_isInitialized) {
+        return CardReadResult.error('Serviço não inicializado');
+      }
+
+      _pinpadService.setCurrentSession(_currentSessionId);
+      return await _pinpadService.readChipCard(message, modality);
+    } catch (e) {
+      return CardReadResult.error('Erro ao ler cartão com chip: $e');
+    }
+  }
+
+  /// Lê senha do cliente (delegando para o PinPadService)
+  Future<PasswordReadResult> readPassword(String securityKey) async {
+    try {
+      if (!_isInitialized) {
+        return PasswordReadResult.error('Serviço não inicializado');
+      }
+
+      _pinpadService.setCurrentSession(_currentSessionId);
+      return await _pinpadService.readPassword(securityKey);
+    } catch (e) {
+      return PasswordReadResult.error('Erro ao ler senha: $e');
+    }
+  }
+
+  /// Lê confirmação do cliente (delegando para o PinPadService)
+  Future<bool?> readConfirmation(String message) async {
+    try {
+      if (!_isInitialized) {
+        return null;
+      }
+
+      _pinpadService.setCurrentSession(_currentSessionId);
+      return await _pinpadService.readConfirmation(message);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Remove cartão do PinPad (delegando para o PinPadService)
+  Future<bool> removeCard() async {
+    try {
+      if (!_isInitialized) {
+        return false;
+      }
+
+      _pinpadService.setCurrentSession(_currentSessionId);
+      return await _pinpadService.removeCard();
+    } catch (e) {
+      return false;
     }
   }
 
@@ -267,6 +454,51 @@ class CliSiTefServiceCapturaTardia {
       // Converter erro genérico para CliSiTefException
       throw CliSiTefException.internalError(
         details: 'Erro ao cancelar operação: $e',
+        originalError: e,
+      );
+    }
+  }
+
+  /// Reseta o PinPad de acordo com o tipo especificado
+  ///
+  /// Delega a operação para o [PinPadService] especializado.
+  /// Para mais detalhes sobre os tipos de reset, veja [PinPadResetType].
+  Future<bool> resetPinPad({
+    PinPadResetType resetType = PinPadResetType.limited,
+    String? sessionId,
+  }) async {
+    try {
+      if (!_isInitialized) {
+        throw CliSiTefException.serviceNotInitialized(
+          details: 'Serviço não foi inicializado antes de resetar PinPad',
+        );
+      }
+
+      // Sincronizar a sessão atual com o PinPadService
+      _pinpadService.setCurrentSession(sessionId ?? _currentSessionId);
+
+      // Delegar a operação para o PinPadService
+      final result = await _pinpadService.resetPinPad(
+        resetType: resetType,
+        sessionId: sessionId,
+      );
+
+      // Sincronizar de volta a sessão se foi alterada
+      final newSessionId = _pinpadService.currentSessionId;
+      if (newSessionId != null && newSessionId != _currentSessionId) {
+        _currentSessionId = newSessionId;
+      }
+
+      return result;
+    } catch (e) {
+      // Se já é uma CliSiTefException, rethrow
+      if (e is CliSiTefException) {
+        rethrow;
+      }
+
+      // Converter erro genérico para CliSiTefException
+      throw CliSiTefException.internalError(
+        details: 'Erro ao resetar PinPad (${resetType.displayName}): $e',
         originalError: e,
       );
     }

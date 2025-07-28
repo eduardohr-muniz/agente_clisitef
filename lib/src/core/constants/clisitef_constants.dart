@@ -16,6 +16,7 @@ class CliSiTefConstants {
   static const String PINPAD_IS_PRESENT_ENDPOINT = '/clisitef/pinpad/isPresent';
   static const String PINPAD_READ_YES_NO_ENDPOINT = '/clisitef/pinpad/readYesNo';
   static const String PINPAD_SET_DISPLAY_MESSAGE_ENDPOINT = '/clisitef/pinpad/setDisplayMessage';
+  static const String PINPAD_REMOVE_CARD_ENDPOINT = '/clisitef/pinpad/removeCard';
 
   // Valores padrão
   static const String DEFAULT_SITEF_IP = '127.0.0.1';
@@ -171,4 +172,73 @@ class CliSiTefConstants {
   static const int ERROR_RESERVED = -42;
   static const int ERROR_PINPAD_EXECUTION = -43;
   static const int ERROR_UNSAFE_TRANSACTION = -50;
+}
+
+/// Tipos de reset do PinPad
+enum PinPadResetType {
+  /// Reset básico: fecha, remove cartão e reabre comunicação
+  basic('Reset Básico', 'Fecha comunicação, remove cartão e reabre'),
+
+  /// Reset completo: inclui reset básico + limpa sessão
+  complete('Reset Completo', 'Reset básico + limpa sessão atual'),
+
+  /// Reset de comunicação: apenas fecha e reabre comunicação
+  communication('Reset Comunicação', 'Apenas fecha e reabre comunicação'),
+
+  /// Reset de estado: limpa transações pendentes
+  state('Reset Estado', 'Limpa transações e estados pendentes'),
+
+  /// Reset de emergência: força reset em todas as condições
+  emergency('Reset Emergência', 'Reset forçado ignorando erros'),
+
+  /// Reset soft: apenas remove cartão e redefine mensagem
+  soft('Reset Soft', 'Remove cartão e redefine mensagem padrão'),
+
+  /// Reset limitado: apenas o que está funcionando no servidor
+  limited('Reset Limitado', 'Apenas operações que funcionam no servidor atual');
+
+  const PinPadResetType(this.displayName, this.description);
+
+  final String displayName;
+  final String description;
+
+  /// Retorna ícone apropriado para cada tipo de reset
+  String get icon {
+    switch (this) {
+      case PinPadResetType.basic:
+        return '🔄';
+      case PinPadResetType.complete:
+        return '🔧';
+      case PinPadResetType.communication:
+        return '📡';
+      case PinPadResetType.state:
+        return '🗑️';
+      case PinPadResetType.emergency:
+        return '🚨';
+      case PinPadResetType.soft:
+        return '🧽';
+      case PinPadResetType.limited:
+        return '⚡';
+    }
+  }
+
+  /// Retorna cor apropriada para cada tipo de reset
+  String get colorName {
+    switch (this) {
+      case PinPadResetType.basic:
+        return 'purple';
+      case PinPadResetType.complete:
+        return 'orange';
+      case PinPadResetType.communication:
+        return 'blue';
+      case PinPadResetType.state:
+        return 'teal';
+      case PinPadResetType.emergency:
+        return 'red';
+      case PinPadResetType.soft:
+        return 'green';
+      case PinPadResetType.limited:
+        return 'yellow';
+    }
+  }
 }
