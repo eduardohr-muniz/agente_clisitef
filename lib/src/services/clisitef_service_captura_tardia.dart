@@ -3,8 +3,6 @@ import 'package:agente_clisitef/agente_clisitef.dart';
 import 'package:agente_clisitef/src/core/exceptions/clisitef_error_codes.dart';
 import 'package:agente_clisitef/src/core/utils/format_utils.dart';
 import 'package:agente_clisitef/src/models/clisitef_response.dart';
-import 'package:agente_clisitef/src/core/constants/clisitef_constants.dart';
-import 'package:agente_clisitef/src/services/pinpad_service.dart';
 
 /// Serviço para transações pendentes de confirmação
 /// Permite iniciar uma transação e decidir posteriormente se confirmar ou cancelar
@@ -33,6 +31,7 @@ class CliSiTefServiceCapturaTardia {
   }
 
   Future<void> _createSession() async {
+    await _deleteSession();
     final sessionResponse = await _repository.createSession();
 
     if (!sessionResponse.isServiceSuccess) {
@@ -46,6 +45,13 @@ class CliSiTefServiceCapturaTardia {
     _currentSessionId = sessionResponse.sessionId;
   }
 
+  Future<void> _deleteSession() async {
+    if (_currentSessionId == null) return;
+
+    await _repository.deleteSession();
+    _currentSessionId = null;
+  }
+
   /// Inicializa o serviço
   Future<bool> initialize() async {
     try {
@@ -56,7 +62,7 @@ class CliSiTefServiceCapturaTardia {
           details: 'Erros de validação: ${errors.join(', ')}',
         );
       }
-
+      await _deleteSession();
       // Criar sessão
       await _createSession();
       _isInitialized = true;
@@ -136,6 +142,9 @@ class CliSiTefServiceCapturaTardia {
         clisitefFields: result.clisitefFields ?? CliSiTefResponse(),
         invoiceDate: data.taxInvoiceDate,
         invoiceTime: data.taxInvoiceTime,
+        onFinish: () {
+          _deleteSession();
+        },
       );
     } catch (e) {
       // Se já é uma CliSiTefException, rethrow
@@ -437,12 +446,12 @@ class CliSiTefServiceCapturaTardia {
         await _repository.continueTransaction(command: 0, sessionId: currentSession, data: '', continueCode: -1);
 
         // Limpar estado local independentemente do resultado
-        _currentSessionId = null;
+        await _deleteSession();
 
         return true;
       } catch (e) {
         // Se falhar, pelo menos limpar o estado local
-        _currentSessionId = null;
+        await _deleteSession();
         return true; // Considerar sucesso pois limpou o estado local
       }
     } catch (e) {

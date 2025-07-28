@@ -23,6 +23,8 @@ class CapturaTardiaTransaction {
 
   final String invoiceNumber;
 
+  final void Function() onFinish;
+
   /// Indica se a transação já foi finalizada
   bool _isFinalized = false;
 
@@ -34,6 +36,7 @@ class CapturaTardiaTransaction {
     required this.invoiceDate,
     required this.invoiceTime,
     required this.invoiceNumber,
+    required this.onFinish,
   });
 
   /// Confirma a transação
@@ -61,7 +64,7 @@ class CapturaTardiaTransaction {
       if (result.isServiceSuccess) {
         _isFinalized = true;
       } else {}
-
+      onFinish();
       return result;
     } catch (e) {
       rethrow;
@@ -93,6 +96,8 @@ class CapturaTardiaTransaction {
       if (result.isServiceSuccess) {
         _isFinalized = true;
       }
+
+      onFinish();
 
       return result;
     } catch (e) {
