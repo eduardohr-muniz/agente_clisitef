@@ -67,8 +67,8 @@ class CliSiTefConstants {
   static const int MAX_SESSION_ID_LENGTH = 32;
 
   // Timeouts padrão
-  static const int DEFAULT_TIMEOUT_SECONDS = 30;
-  static const int DEFAULT_PINPAD_TIMEOUT_SECONDS = 60;
+  static const int DEFAULT_TIMEOUT_SECONDS = 15;
+  static const int DEFAULT_PINPAD_TIMEOUT_SECONDS = 30;
 
   // Formatos de data e hora
   static const String DATE_FORMAT = 'yyyyMMdd';

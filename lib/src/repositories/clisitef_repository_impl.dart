@@ -440,7 +440,7 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
         data: {CliSiTefConstants.PARAM_SESSION_ID: sessionId},
         options: Options(
           headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-          receiveTimeout: const Duration(seconds: 15), // Timeout menor para PinPad
+          receiveTimeout: const Duration(seconds: 10), // Timeout menor para PinPad
           sendTimeout: const Duration(seconds: 10),
         ),
       );
@@ -478,7 +478,7 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
         options: Options(
           headers: {'Content-Type': 'application/x-www-form-urlencoded'},
           receiveTimeout: const Duration(seconds: 10), // Timeout menor para fechar
-          sendTimeout: const Duration(seconds: 5),
+          sendTimeout: const Duration(seconds: 10),
         ),
       );
 
@@ -672,7 +672,7 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
         data: {'sessionId': 'test'},
         options: Options(
           headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-          receiveTimeout: const Duration(seconds: 5),
+          receiveTimeout: const Duration(seconds: 10),
           validateStatus: (status) => status != null && status < 500, // Aceitar códigos até 499
         ),
       );
