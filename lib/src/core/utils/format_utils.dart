@@ -33,6 +33,12 @@ class FormatUtils {
         '${date.day.toString().padLeft(2, '0')}';
   }
 
+  static String formatDateDDMMYYYY(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}'
+        '${date.month.toString().padLeft(2, '0')}'
+        '${date.year.toString().padLeft(4, '0')}';
+  }
+
   /// Formata horário para o padrão CliSiTef (HHMMSS)
   static String formatTime(DateTime time) {
     return '${time.hour.toString().padLeft(2, '0')}'

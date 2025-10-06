@@ -100,7 +100,7 @@ class ClisitefCancelamentoService {
       fieldId = firstResponse.fieldType ?? 1000000000;
       responseData = '';
 
-      while (commandId != 0 && fieldId != 0) {
+      while (true) {
         final response = await _repository.continueTransaction(sessionId: sessionId, command: commandId, data: responseData);
 
         commandId = response.command ?? -10;
@@ -120,6 +120,9 @@ class ClisitefCancelamentoService {
           }
         } else {
           responseData = '';
+        }
+        if (commandId == 0 && fieldId == 0) {
+          break;
         }
       }
 
@@ -189,7 +192,7 @@ class ClisitefCancelamentoService {
         return data.nsuHost;
       case 515:
         // Data da transação (ddmmaaaa)
-        return FormatUtils.formatDate(data.dateTime);
+        return FormatUtils.formatDateDDMMYYYY(data.dateTime);
       case 146:
         // Valor da transação
         return FormatUtils.formatAmount(data.trnAmount);
