@@ -1,0 +1,104 @@
+# Configuração para Testes E2E do Serviço de Cancelamento
+#
+# Este arquivo contém as configurações necessárias para executar
+# os testes end-to-end do serviço de cancelamento CliSiTef.
+
+# Configurações do CliSiTef
+clisitef:
+  # IP do servidor CliSiTef
+  sitef_ip: "127.0.0.1"
+
+  # ID da loja (00000000 para demonstração)
+  store_id: "00000000"
+
+  # ID do terminal
+  terminal_id: "REST0001"
+
+  # Operador padrão
+  cashier_operator: "CAIXA"
+
+  # Parâmetros adicionais
+  additional_parameters:
+    test_mode: "true"
+    environment: "e2e_test"
+
+  # Parâmetros de inicialização
+  init_parameters:
+    version: "1.0.0"
+    timeout: "30000"
+
+# Configurações de teste
+test:
+  # Timeout para operações (em segundos)
+  timeout_seconds: 30
+
+  # Número máximo de tentativas
+  max_retries: 3
+
+  # Intervalo entre tentativas (em milissegundos)
+  retry_interval_ms: 1000
+
+  # Dados de teste padrão
+  default_data:
+    amount: 100.00
+    invoice_number: "TEST001"
+    supervisor_code: "123456"
+    nsu_host: "123456789"
+
+# Cenários de teste
+scenarios:
+  # Teste de cancelamento PIX
+  pix_cancellation:
+    method: "PIX"
+    amount: 150.00
+    invoice_number: "PIX001"
+    expected_result: true
+
+  # Teste de cancelamento Débito
+  debit_cancellation:
+    method: "DEBITO"
+    amount: 200.00
+    invoice_number: "DEB002"
+    expected_result: true
+
+  # Teste de cancelamento Crédito
+  credit_cancellation:
+    method: "CREDITO"
+    amount: 300.00
+    invoice_number: "CRE003"
+    expected_result: true
+
+  # Teste de dados inválidos
+  invalid_data:
+    method: "INVALID"
+    amount: -100.00
+    invoice_number: ""
+    expected_result: false
+
+# Configurações de log
+logging:
+  # Nível de log (DEBUG, INFO, WARN, ERROR)
+  level: "INFO"
+
+  # Habilitar logs detalhados
+  verbose: true
+
+  # Salvar logs em arquivo
+  save_to_file: true
+
+  # Diretório para logs
+  log_directory: "./logs"
+
+# Configurações de performance
+performance:
+  # Timeout para operações rápidas (ms)
+  fast_timeout_ms: 5000
+
+  # Timeout para operações lentas (ms)
+  slow_timeout_ms: 30000
+
+  # Habilitar métricas de performance
+  enable_metrics: true
+
+  # Limite de memória (MB)
+  memory_limit_mb: 512

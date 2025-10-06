@@ -1,0 +1,135 @@
+# Configuração para testes do ClisitefCancelamentoService
+#
+# Este arquivo contém configurações específicas para os testes
+# do serviço de cancelamento CliSiTef.
+
+# Configurações gerais
+test:
+  # Timeout padrão para testes (em segundos)
+  timeout: 60
+
+  # Número máximo de workers paralelos
+  concurrency: 4
+
+  # Habilitar coverage
+  coverage: true
+
+  # Diretório de coverage
+  coverage_dir: "coverage"
+
+# Configurações específicas para E2E
+e2e:
+  # Timeout para operações E2E (em segundos)
+  timeout: 120
+
+  # Número máximo de tentativas
+  max_retries: 3
+
+  # Intervalo entre tentativas (em milissegundos)
+  retry_interval: 2000
+
+  # Habilitar logs detalhados
+  verbose: true
+
+# Configurações do CliSiTef para testes
+clisitef:
+  # IP do servidor CliSiTef
+  sitef_ip: "127.0.0.1"
+
+  # ID da loja (00000000 para demonstração)
+  store_id: "00000000"
+
+  # ID do terminal
+  terminal_id: "REST0001"
+
+  # Operador padrão
+  cashier_operator: "CAIXA"
+
+  # Parâmetros adicionais
+  additional_parameters:
+    test_mode: "true"
+    environment: "test"
+
+  # Parâmetros de inicialização
+  init_parameters:
+    version: "1.0.0"
+    timeout: "30000"
+
+# Cenários de teste
+scenarios:
+  # Teste de cancelamento PIX
+  pix_cancellation:
+    method: "PIX"
+    amount: 150.00
+    invoice_number: "PIX001"
+    expected_result: true
+
+  # Teste de cancelamento Débito
+  debit_cancellation:
+    method: "DEBITO"
+    amount: 200.00
+    invoice_number: "DEB002"
+    expected_result: true
+
+  # Teste de cancelamento Crédito
+  credit_cancellation:
+    method: "CREDITO"
+    amount: 300.00
+    invoice_number: "CRE003"
+    expected_result: true
+
+  # Teste de dados inválidos
+  invalid_data:
+    method: "INVALID"
+    amount: -100.00
+    invoice_number: ""
+    expected_result: false
+
+# Configurações de performance
+performance:
+  # Timeout para operações rápidas (ms)
+  fast_timeout_ms: 5000
+
+  # Timeout para operações lentas (ms)
+  slow_timeout_ms: 30000
+
+  # Habilitar métricas de performance
+  enable_metrics: true
+
+  # Limite de memória (MB)
+  memory_limit_mb: 512
+
+# Configurações de logging
+logging:
+  # Nível de log para testes
+  level: "INFO"
+
+  # Habilitar logs detalhados
+  verbose: true
+
+  # Salvar logs em arquivo
+  save_to_file: true
+
+  # Diretório de logs
+  directory: "test/logs"
+
+  # Formato de timestamp
+  timestamp_format: "yyyy-MM-dd HH:mm:ss"
+
+# Configurações de ambiente
+environment:
+  # Ambiente de teste
+  test_env: "unit_and_e2e"
+
+  # Configurações específicas
+  settings:
+    # Habilitar modo debug
+    debug: true
+
+    # Habilitar modo verbose
+    verbose: true
+
+    # Configurações de rede
+    network:
+      timeout: 30000
+      retries: 3

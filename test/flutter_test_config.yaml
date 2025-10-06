@@ -1,0 +1,113 @@
+# Configuração para testes Flutter
+#
+# Este arquivo contém configurações específicas para os testes
+# do serviço de cancelamento CliSiTef.
+
+# Configurações gerais
+test:
+  # Timeout padrão para testes (em segundos)
+  timeout: 60
+
+  # Número máximo de workers paralelos
+  concurrency: 4
+
+  # Habilitar coverage
+  coverage: true
+
+  # Diretório de coverage
+  coverage_dir: "coverage"
+
+# Configurações específicas para E2E
+e2e:
+  # Timeout para operações E2E (em segundos)
+  timeout: 120
+
+  # Número máximo de tentativas
+  max_retries: 3
+
+  # Intervalo entre tentativas (em milissegundos)
+  retry_interval: 2000
+
+  # Habilitar logs detalhados
+  verbose: true
+
+# Configurações de mock
+mock:
+  # Habilitar mocks para testes
+  enabled: false
+
+  # Diretório de mocks
+  directory: "test/mocks"
+
+  # Arquivo de mock principal
+  main_file: "clisitef_mock.dart"
+
+# Configurações de integração
+integration:
+  # Habilitar testes de integração
+  enabled: true
+
+  # Diretório de testes de integração
+  directory: "integration_test"
+
+  # Configurações específicas
+  settings:
+    # Timeout para testes de integração
+    timeout: 180
+
+    # Habilitar screenshots
+    screenshots: true
+
+    # Diretório de screenshots
+    screenshot_dir: "test/screenshots"
+
+# Configurações de performance
+performance:
+  # Habilitar testes de performance
+  enabled: true
+
+  # Limites de performance
+  limits:
+    # Tempo máximo de inicialização (ms)
+    initialization_time: 5000
+
+    # Tempo máximo de transação (ms)
+    transaction_time: 30000
+
+    # Uso máximo de memória (MB)
+    memory_usage: 512
+
+# Configurações de logging
+logging:
+  # Nível de log para testes
+  level: "INFO"
+
+  # Habilitar logs detalhados
+  verbose: true
+
+  # Salvar logs em arquivo
+  save_to_file: true
+
+  # Diretório de logs
+  directory: "test/logs"
+
+  # Formato de timestamp
+  timestamp_format: "yyyy-MM-dd HH:mm:ss"
+
+# Configurações de ambiente
+environment:
+  # Ambiente de teste
+  test_env: "e2e"
+
+  # Configurações específicas
+  settings:
+    # Habilitar modo debug
+    debug: true
+
+    # Habilitar modo verbose
+    verbose: true
+
+    # Configurações de rede
+    network:
+      timeout: 30000
+      retries: 3

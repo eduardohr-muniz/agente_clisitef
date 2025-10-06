@@ -1,0 +1,258 @@
+{
+    "clisitef_cancelamento_test_data": {
+        "description": "Dados de teste para o serviço de cancelamento CliSiTef",
+        "version": "1.0.0",
+        "last_updated": "2025-01-15",
+        "configurations": {
+            "default": {
+                "sitef_ip": "127.0.0.1",
+                "store_id": "00000000",
+                "terminal_id": "REST0001",
+                "cashier_operator": "CAIXA",
+                "function_id": 101,
+                "additional_parameters": {
+                    "test_mode": "true",
+                    "environment": "test"
+                },
+                "init_parameters": {
+                    "version": "1.0.0",
+                    "timeout": "30000"
+                }
+            },
+            "production": {
+                "sitef_ip": "192.168.1.100",
+                "store_id": "12345678",
+                "terminal_id": "TERM001",
+                "cashier_operator": "ADMIN",
+                "function_id": 101,
+                "additional_parameters": {
+                    "test_mode": "false",
+                    "environment": "production"
+                },
+                "init_parameters": {
+                    "version": "1.0.0",
+                    "timeout": "60000"
+                }
+            }
+        },
+        "test_scenarios": {
+            "pix_cancellation": {
+                "name": "Cancelamento PIX",
+                "description": "Testa cancelamento de transação PIX",
+                "data": {
+                    "method": "PIX",
+                    "amount": 150.00,
+                    "invoice_number": "PIX001",
+                    "date_time": "2025-01-15T10:30:00Z",
+                    "doc_number": "PIX001",
+                    "expected_result": true
+                },
+                "commands": [
+                    {
+                        "command_id": 21,
+                        "field_id": -1,
+                        "buffer": "1:Teste de comunicacao;2:Reimpressao de comprovante;3:Cancelamento de transacao;4:Pre-autorizacao;",
+                        "expected_response": "3"
+                    },
+                    {
+                        "command_id": 34,
+                        "field_id": 146,
+                        "buffer": "Digite o valor a ser cancelado:",
+                        "expected_response": "15000"
+                    },
+                    {
+                        "command_id": 30,
+                        "field_id": 515,
+                        "buffer": "Digite a data da transacao (DDMMAAAA):",
+                        "expected_response": "15012025"
+                    },
+                    {
+                        "command_id": 30,
+                        "field_id": 516,
+                        "buffer": "Digite o numero do documento:",
+                        "expected_response": "PIX001"
+                    },
+                    {
+                        "command_id": 30,
+                        "field_id": 500,
+                        "buffer": "Digite o codigo do supervisor:",
+                        "expected_response": "123456"
+                    }
+                ]
+            },
+            "debit_cancellation": {
+                "name": "Cancelamento Débito",
+                "description": "Testa cancelamento de cartão de débito",
+                "data": {
+                    "method": "DEBITO",
+                    "amount": 200.00,
+                    "invoice_number": "DEB002",
+                    "date_time": "2025-01-15T11:00:00Z",
+                    "doc_number": "DEB002",
+                    "expected_result": true
+                },
+                "commands": [
+                    {
+                        "command_id": 21,
+                        "field_id": -1,
+                        "buffer": "1:Teste de comunicacao;2:Reimpressao de comprovante;3:Cancelamento de transacao;4:Pre-autorizacao;",
+                        "expected_response": "3"
+                    },
+                    {
+                        "command_id": -1,
+                        "field_id": 0,
+                        "buffer": "1:PIX;2:Débito;3:Crédito;4:Troco;",
+                        "expected_response": "2"
+                    },
+                    {
+                        "command_id": 34,
+                        "field_id": 146,
+                        "buffer": "Digite o valor a ser cancelado:",
+                        "expected_response": "20000"
+                    }
+                ]
+            },
+            "credit_cancellation": {
+                "name": "Cancelamento Crédito",
+                "description": "Testa cancelamento de cartão de crédito",
+                "data": {
+                    "method": "CREDITO",
+                    "amount": 300.00,
+                    "invoice_number": "CRE003",
+                    "date_time": "2025-01-15T11:30:00Z",
+                    "doc_number": "CRE003",
+                    "expected_result": true
+                },
+                "commands": [
+                    {
+                        "command_id": 21,
+                        "field_id": -1,
+                        "buffer": "1:Teste de comunicacao;2:Reimpressao de comprovante;3:Cancelamento de transacao;4:Pre-autorizacao;",
+                        "expected_response": "3"
+                    },
+                    {
+                        "command_id": -1,
+                        "field_id": 0,
+                        "buffer": "1:PIX;2:Débito;3:Crédito;4:Troco;",
+                        "expected_response": "3"
+                    },
+                    {
+                        "command_id": 34,
+                        "field_id": 146,
+                        "buffer": "Digite o valor a ser cancelado:",
+                        "expected_response": "30000"
+                    }
+                ]
+            },
+            "invalid_data": {
+                "name": "Dados Inválidos",
+                "description": "Testa tratamento de dados inválidos",
+                "data": {
+                    "method": "INVALID",
+                    "amount": -100.00,
+                    "invoice_number": "",
+                    "date_time": "2025-01-15T12:00:00Z",
+                    "doc_number": "",
+                    "expected_result": false
+                },
+                "expected_error": "CliSiTefException"
+            }
+        },
+        "field_mappings": {
+            "146": {
+                "name": "Valor da Transação",
+                "description": "Campo para coleta do valor a ser cancelado",
+                "type": "monetary",
+                "format": "XXXXXX (sem vírgula, ex: 15000 para R$ 150,00)",
+                "example": "15000"
+            },
+            "500": {
+                "name": "Código do Supervisor",
+                "description": "Campo para coleta do código de autorização do supervisor",
+                "type": "numeric",
+                "format": "XXXXXX (6 dígitos)",
+                "example": "123456"
+            },
+            "515": {
+                "name": "Data da Transação",
+                "description": "Campo para coleta da data da transação original",
+                "type": "date",
+                "format": "DDMMAAAA",
+                "example": "15012025"
+            },
+            "516": {
+                "name": "Número do Documento",
+                "description": "Campo para coleta do número do documento/NSU",
+                "type": "alphanumeric",
+                "format": "String livre",
+                "example": "123456789"
+            }
+        },
+        "command_mappings": {
+            "21": {
+                "name": "Menu de Seleção",
+                "description": "Apresenta menu de opções para seleção do usuário",
+                "response_format": "Número da opção (ex: '3' para cancelamento)"
+            },
+            "30": {
+                "name": "Coleta de Campo Genérico",
+                "description": "Coleta um campo cujo tamanho está entre min e max",
+                "response_format": "Valor do campo conforme fieldId"
+            },
+            "34": {
+                "name": "Coleta de Valor Monetário",
+                "description": "Coleta valor monetário com separador de centavos",
+                "response_format": "Valor formatado (ex: '150,00' ou '15000')"
+            },
+            "-1": {
+                "name": "Processamento Especial",
+                "description": "Comando especial para processamento de buffers complexos",
+                "response_format": "Valor processado conforme contexto"
+            }
+        },
+        "error_scenarios": {
+            "session_timeout": {
+                "description": "Simula timeout de sessão",
+                "error_code": "TIMEOUT",
+                "expected_behavior": "Retry automático ou falha controlada"
+            },
+            "invalid_session": {
+                "description": "Simula sessão inválida",
+                "error_code": "INVALID_SESSION",
+                "expected_behavior": "Criação de nova sessão"
+            },
+            "network_error": {
+                "description": "Simula erro de rede",
+                "error_code": "NETWORK_ERROR",
+                "expected_behavior": "Retry com backoff exponencial"
+            },
+            "invalid_data": {
+                "description": "Simula dados inválidos",
+                "error_code": "INVALID_DATA",
+                "expected_behavior": "Validação e erro descritivo"
+            }
+        },
+        "performance_benchmarks": {
+            "initialization": {
+                "max_time_ms": 5000,
+                "description": "Tempo máximo para inicialização do serviço"
+            },
+            "session_creation": {
+                "max_time_ms": 3000,
+                "description": "Tempo máximo para criação de sessão"
+            },
+            "command_processing": {
+                "max_time_ms": 2000,
+                "description": "Tempo máximo para processamento de comando"
+            },
+            "transaction_completion": {
+                "max_time_ms": 30000,
+                "description": "Tempo máximo para conclusão de transação"
+            },
+            "memory_usage": {
+                "max_mb": 512,
+                "description": "Uso máximo de memória durante os testes"
+            }
+        }
+    }
+}
