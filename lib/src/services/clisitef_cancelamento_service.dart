@@ -9,7 +9,6 @@ import 'package:flutter/foundation.dart';
 class ClisitefCancelamentoService {
   late final CliSiTefRepository _repository;
   late final CliSiTefCoreService _coreService;
-  late final PinPadService _pinpadService;
 
   final CliSiTefConfig _config;
   bool _isInitialized = false;
@@ -21,10 +20,6 @@ class ClisitefCancelamentoService {
   }) : _config = config {
     _repository = repository ?? CliSiTefRepositoryImpl(config: config);
     _coreService = CliSiTefCoreService(
-      repository: _repository,
-      config: config,
-    );
-    _pinpadService = PinPadService(
       repository: _repository,
       config: config,
     );
@@ -105,7 +100,6 @@ class ClisitefCancelamentoService {
 
         commandId = response.command ?? -10;
         fieldId = response.fieldType ?? -10;
-        print('commandId: $commandId\nfieldId: $fieldId');
 
         if (fieldId == -1) {
           _messageDisplay.value = response.buffer ?? '';
@@ -213,17 +207,11 @@ class ClisitefCancelamentoService {
   /// Obtém o serviço core
   CliSiTefCoreService get coreService => _coreService;
 
-  /// Obtém o serviço PinPad
-  PinPadService get pinpadService => _pinpadService;
-
   /// Obtém a versão do SDK
   String get version => '1.0.0';
 
   /// Obtém o repositório (para controle manual do fluxo)
   CliSiTefRepository get repository => _repository;
-
-  /// Obtém o serviço de PinPad (para operações avançadas)
-  PinPadService get pinpadResetService => _pinpadService;
 
   Future<void> dispose() async {
     try {
