@@ -71,7 +71,7 @@ Future<void> _runTests() async {
     );
 
     final pixResult = await service.start(pixData);
-    print('   ✅ Cancelamento PIX: ${pixResult ? "Sucesso" : "Falha"}');
+    print('   ✅ Cancelamento PIX: ${pixResult.codResult.isNotEmpty ? "Sucesso" : "Falha"}');
     print('   ✅ Sessão atual: ${service.currentSessionId}');
     print('');
 
@@ -85,7 +85,7 @@ Future<void> _runTests() async {
     );
 
     final debitoResult = await service.start(debitoData);
-    print('   ✅ Cancelamento Débito: ${debitoResult ? "Sucesso" : "Falha"}');
+    print('   ✅ Cancelamento Débito: ${debitoResult.codResult.isNotEmpty ? "Sucesso" : "Falha"}');
     print('');
 
     // Teste 6: Cancelamento Crédito
@@ -98,7 +98,7 @@ Future<void> _runTests() async {
     );
 
     final creditoResult = await service.start(creditoData);
-    print('   ✅ Cancelamento Crédito: ${creditoResult ? "Sucesso" : "Falha"}');
+    print('   ✅ Cancelamento Crédito: ${creditoResult.codResult.isNotEmpty ? "Sucesso" : "Falha"}');
     print('');
 
     // Teste 7: Limpeza
@@ -113,9 +113,9 @@ Future<void> _runTests() async {
     print('   ✅ Inicialização: OK');
     print('   ✅ Processamento de Comandos: OK');
     print('   ✅ Processamento de FieldIds: OK');
-    print('   ✅ Cancelamento PIX: ${pixResult ? "OK" : "FALHA"}');
-    print('   ✅ Cancelamento Débito: ${debitoResult ? "OK" : "FALHA"}');
-    print('   ✅ Cancelamento Crédito: ${creditoResult ? "OK" : "FALHA"}');
+    print('   ✅ Cancelamento PIX: ${pixResult.codResult.isNotEmpty ? "OK" : "FALHA"}');
+    print('   ✅ Cancelamento Débito: ${debitoResult.codResult.isNotEmpty ? "OK" : "FALHA"}');
+    print('   ✅ Cancelamento Crédito: ${creditoResult.codResult.isNotEmpty ? "OK" : "FALHA"}');
     print('   ✅ Limpeza: OK');
   } catch (e) {
     print('❌ Erro durante os testes: $e');
