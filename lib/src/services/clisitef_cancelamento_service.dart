@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:agente_clisitef/agente_clisitef.dart';
 import 'package:agente_clisitef/src/core/utils/format_utils.dart';
 import 'package:agente_clisitef/src/core/utils/payment_method.dart';
+import 'package:agente_clisitef/src/models/clisitef_response.dart';
 import 'package:flutter/foundation.dart';
 
 /// Serviço para transações pendentes de confirmação
@@ -90,7 +91,7 @@ class ClisitefCancelamentoService {
 
   /// Inicia uma transação e retorna um modelo pendente
   /// A transação NÃO é finalizada automaticamente
-  Future<bool> start(CancelationData data) async {
+  Future<CliSiTefResponse> start(CancelationData data) async {
     if (!_isInitialized) {
       throw CliSiTefException.serviceNotInitialized(
         details: 'Serviço não foi inicializado antes de iniciar transação',
@@ -98,6 +99,8 @@ class ClisitefCancelamentoService {
     }
 
     try {
+      CliSiTefResponse cliSiTefResponse = CliSiTefResponse();
+
       _startTime = DateTime.now();
       _forceCancel = false;
       final sessionId = await _createSession();
@@ -108,7 +111,7 @@ class ClisitefCancelamentoService {
 
       String responseData = '';
       int commandId = 0;
-      int fieldId = 1000000000;
+      int fieldId = -10;
 
       // Primeira chamada continueTransaction para iniciar o fluxo
       final firstResponse = await _repository.continueTransaction(
@@ -123,6 +126,8 @@ class ClisitefCancelamentoService {
 
       while (true) {
         final response = await _repository.continueTransaction(sessionId: sessionId, command: commandId, data: responseData);
+
+        if (response.fieldType != null) cliSiTefResponse.onFieldId(fieldId: response.fieldType!, buffer: response.buffer ?? '');
         _preventLoop(response);
 
         commandId = response.command ?? -10;
@@ -144,20 +149,20 @@ class ClisitefCancelamentoService {
         }
         if (_forceCancel) break;
         // se o comando for 0 e o campo for 0, precisa finalizar a transação
-        if (commandId == 0 && fieldId == 0) break;
+        if (commandId == 0 && fieldId == 0 && (response.buffer ?? '').isEmpty) break;
       }
 
-      if (_forceCancel) return false;
+      if (_forceCancel) return cliSiTefResponse;
 
       await _repository.finishTransaction(
         sessionId: sessionId,
-        confirm: false, // false = cancelar, true = confirmar
+        confirm: true,
         taxInvoiceNumber: data.taxInvoiceNumber,
         taxInvoiceDate: data.taxInvoiceDate.toString().replaceAll('-', '').substring(0, 8), // YYYYMMDD
         taxInvoiceTime: data.taxInvoiceTime.toString().substring(11, 17).replaceAll(':', ''), // HHMMSS
       );
 
-      return true;
+      return cliSiTefResponse;
     } catch (e) {
       throw CliSiTefException.internalError(
         details: 'Erro ao iniciar transação: $e',

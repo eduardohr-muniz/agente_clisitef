@@ -1,9 +1,10 @@
+import 'package:agente_clisitef/src/core/utils/payment_method.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:agente_clisitef/agente_clisitef.dart';
 import 'package:agente_clisitef/src/models/cancelation_data.dart';
 import 'package:agente_clisitef/src/services/clisitef_cancelamento_service.dart';
 
-const String _NSU_HOST = '999060014';
+const String _NSU_HOST = '999060029';
 
 void main() {
   group('🟢 Teste DÉBITO - Cancelamento E2E', () {
@@ -47,8 +48,10 @@ void main() {
       // Arrange
       await service.initialize();
       final debitoData = _createDebitoCancelationData(
-        amount: 1.00,
-        invoiceNumber: 'DEB002',
+        amount: 2.00,
+        invoiceNumber: '1234',
+        functionId: PaymentMethod.DEBITO.code,
+        operator: 'CAIXA',
       );
 
       // Act
@@ -105,7 +108,7 @@ void main() {
 
 CancelationData _createDebitoCancelationData({
   double amount = 1.00,
-  String invoiceNumber = '60002',
+  String invoiceNumber = '1234',
   String operator = 'CAIXA',
   int? functionId,
 }) {
