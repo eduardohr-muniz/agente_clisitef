@@ -3,7 +3,7 @@ import 'package:agente_clisitef/src/core/utils/format_utils.dart';
 
 class CancelationData extends TransactionData {
   final DateTime dateTime;
-  final String docNumber;
+  final String nsuHost;
   CancelationData({
     required super.functionId,
     required super.trnAmount,
@@ -11,7 +11,7 @@ class CancelationData extends TransactionData {
     required super.taxInvoiceDate,
     required super.taxInvoiceTime,
     required this.dateTime,
-    required this.docNumber,
+    required this.nsuHost,
     super.cashierOperator = CliSiTefConstants.DEFAULT_OPERATOR,
     super.trnAdditionalParameters = const {},
     super.trnInitParameters = const {},
@@ -20,7 +20,7 @@ class CancelationData extends TransactionData {
 
   CancelationData copyWith({
     DateTime? dateTime,
-    String? docNumber,
+    String? nsuHost,
     int? functionId,
     double? trnAmount,
     String? taxInvoiceNumber,
@@ -42,7 +42,7 @@ class CancelationData extends TransactionData {
       trnInitParameters: trnInitParameters ?? this.trnInitParameters,
       sessionId: sessionId ?? this.sessionId,
       dateTime: dateTime ?? this.dateTime,
-      docNumber: docNumber ?? this.docNumber,
+      nsuHost: nsuHost ?? this.nsuHost,
     );
   }
 

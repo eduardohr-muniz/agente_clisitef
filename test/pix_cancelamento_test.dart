@@ -116,6 +116,6 @@ CancelationData _createPixCancelationData({
     },
     sessionId: '', // Será preenchido automaticamente
     dateTime: now,
-    docNumber: invoiceNumber,
+    nsuHost: invoiceNumber,
   );
 }

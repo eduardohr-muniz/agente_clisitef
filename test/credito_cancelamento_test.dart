@@ -124,6 +124,6 @@ CancelationData _createCreditoCancelationData({
     },
     sessionId: '',
     dateTime: now,
-    docNumber: invoiceNumber,
+    nsuHost: invoiceNumber,
   );
 }

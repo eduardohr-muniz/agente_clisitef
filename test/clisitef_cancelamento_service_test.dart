@@ -309,7 +309,7 @@ void main() {
           trnInitParameters: <String, String>{},
           sessionId: '',
           dateTime: DateTime.now(),
-          docNumber: '',
+          nsuHost: '',
         );
 
         // Act & Assert
@@ -473,6 +473,6 @@ CancelationData _createTestCancelationData({
     },
     sessionId: '', // Será preenchido automaticamente
     dateTime: now,
-    docNumber: invoiceNumber,
+    nsuHost: invoiceNumber,
   );
 }

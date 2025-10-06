@@ -41,7 +41,6 @@ void main() {
       print('✅ Cancelamento Débito retornou: $result');
     });
 
-
     test('Deve inicializar e processar Débito completo (método original)', () async {
       // Arrange
       await service.initialize();
@@ -125,6 +124,6 @@ CancelationData _createDebitoCancelationData({
     },
     sessionId: '',
     dateTime: now,
-    docNumber: invoiceNumber,
+    nsuHost: invoiceNumber,
   );
 }

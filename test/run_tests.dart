@@ -242,6 +242,6 @@ CancelationData _createCancelationData({
     },
     sessionId: '', // Será preenchido automaticamente
     dateTime: now,
-    docNumber: invoiceNumber,
+    nsuHost: invoiceNumber,
   );
 }
