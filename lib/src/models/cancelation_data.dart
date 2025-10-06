@@ -10,12 +10,12 @@ class CancelationData extends TransactionData {
     required super.taxInvoiceNumber,
     required super.taxInvoiceDate,
     required super.taxInvoiceTime,
-    required super.cashierOperator,
-    required super.trnAdditionalParameters,
-    required super.trnInitParameters,
-    required super.sessionId,
     required this.dateTime,
     required this.docNumber,
+    super.cashierOperator = CliSiTefConstants.DEFAULT_OPERATOR,
+    super.trnAdditionalParameters = const {},
+    super.trnInitParameters = const {},
+    super.sessionId,
   });
 
   CancelationData copyWith({
