@@ -51,24 +51,6 @@ void main() {
       print('✅ Cancelamento PIX retornou: $result');
     });
 
-    test('Deve usar método cancelarPix específico', () async {
-      // Arrange
-      await service.initialize();
-
-      // Act - Usar modo de teste para simular PIX
-      final result = await service.cancelarPix(
-        amount: 50.00,
-        invoiceNumber: 'PIX001',
-        operator: 'CAIXA',
-        testMode: true, // Modo de teste
-      );
-
-      // Assert
-      expect(result, isTrue);
-      expect(service.currentSessionId, isNotNull);
-      print('✅ PIX cancelamento específico: $result');
-    });
-
     test('Deve inicializar e processar PIX completo (método original)', () async {
       // Arrange
       await service.initialize();

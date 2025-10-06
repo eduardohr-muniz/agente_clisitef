@@ -88,8 +88,19 @@ class ClisitefCancelamentoService {
       int commandId = 0;
       int fieldId = 1000000000;
 
+      // Primeira chamada continueTransaction para iniciar o fluxo
+      final firstResponse = await _repository.continueTransaction(
+        sessionId: sessionId,
+        command: 0,
+        data: '',
+      );
+
+      commandId = firstResponse.command ?? -1;
+      fieldId = firstResponse.fieldType ?? 1000000000;
+      responseData = '';
+
       while (commandId != 0 && fieldId != 0) {
-        final response = await _repository.continueTransaction(sessionId: sessionId, command: 0, data: responseData);
+        final response = await _repository.continueTransaction(sessionId: sessionId, command: commandId, data: responseData);
 
         commandId = response.command ?? -1;
         fieldId = response.fieldType ?? 1000000000;
@@ -102,6 +113,13 @@ class ClisitefCancelamentoService {
         if (hasInteraction0) {
           if (commandId == -1) {
             responseData = processMinusOne(response.buffer ?? '', data);
+          } else if (commandId == 21 && fieldId == -1) {
+            // Menu PIX específico - "1:Pix;2:Pix Troco;"
+            if ((response.buffer ?? '').contains('Pix')) {
+              responseData = '1'; // Selecionar PIX normal (opção 1)
+            } else {
+              responseData = process21OR34(fieldId);
+            }
           } else {
             responseData = process21OR34(fieldId);
           }
@@ -112,7 +130,7 @@ class ClisitefCancelamentoService {
 
       await _repository.finishTransaction(
         sessionId: sessionId,
-        confirm: false,
+        confirm: false, // false = cancelar, true = confirmar
         taxInvoiceNumber: data.taxInvoiceNumber,
         taxInvoiceDate: data.taxInvoiceDate.toString().replaceAll('-', '').substring(0, 8), // YYYYMMDD
         taxInvoiceTime: data.taxInvoiceTime.toString().substring(11, 17).replaceAll(':', ''), // HHMMSS
