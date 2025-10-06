@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:agente_clisitef/agente_clisitef.dart';
+import 'package:agente_clisitef/src/core/utils/format_utils.dart';
 import 'package:agente_clisitef/src/core/utils/payment_method.dart';
 import 'package:flutter/foundation.dart';
 
@@ -80,7 +81,7 @@ class ClisitefCancelamentoService {
     try {
       final sessionId = await _createSession();
 
-      final dataWithSessionId = data.copyWith(sessionId: sessionId);
+      final dataWithSessionId = data.copyWith(sessionId: sessionId, functionId: 110);
 
       await _repository.startTransaction(dataWithSessionId);
 
@@ -102,8 +103,9 @@ class ClisitefCancelamentoService {
       while (commandId != 0 && fieldId != 0) {
         final response = await _repository.continueTransaction(sessionId: sessionId, command: commandId, data: responseData);
 
-        commandId = response.command ?? -1;
-        fieldId = response.fieldType ?? 1000000000;
+        commandId = response.command ?? -10;
+        fieldId = response.fieldType ?? -10;
+        print('commandId: $commandId\nfieldId: $fieldId');
 
         if (fieldId == -1) {
           _messageDisplay.value = response.buffer ?? '';
@@ -111,21 +113,10 @@ class ClisitefCancelamentoService {
 
         final hasInteraction0 = hasInteraction(commandId);
         if (hasInteraction0) {
-          if (commandId == -1) {
+          if (commandId == 21 && fieldId == -1) {
             responseData = processMinusOne(response.buffer ?? '', data);
-          } else if (commandId == 21 && fieldId == -1) {
-            // Menu PIX específico - "1:Pix;2:Pix Troco;"
-            if ((response.buffer ?? '').contains('Pix')) {
-              responseData = '1'; // Selecionar PIX normal (opção 1)
-            }
-            // Menu cartão específico - "1:Magnetico;2:Digitado;"
-            else if ((response.buffer ?? '').contains('Magnetico') && (response.buffer ?? '').contains('Digitado')) {
-              responseData = '1'; // Sempre Magnético (conforme solicitado pelo usuário)
-            } else {
-              responseData = process21OR34(fieldId);
-            }
           } else {
-            responseData = process21OR34(fieldId);
+            responseData = process21OR34(fieldId: fieldId, data: data);
           }
         } else {
           responseData = '';
@@ -157,7 +148,7 @@ class ClisitefCancelamentoService {
       //21;-1 1:Teste de comunicacao;2:Reimpressao de comprovante;3:Cancelamento de transacao;4:Pre-autorizacao;5:Consulta parcelas CDC;6:Consulta Private Label;7:Consulta saque e saque Fininvest;8:Consulta Saldo Debito;9:Consulta Saldo Credito;10:Outros Cielo;11:Carga forcada de tabelas no pinpad (Servidor);12:Consulta Saque Parcelado;13:Consulta Parcelas Cred. Conductor;14:Consulta Parcelas Cred. MarketPay;15:Saque Carteira Digital;16:Recarga Carteira Digital;17:Consulta Saldo Carteira Dig
       return '3';
     }
-    if (buffer.contains('1:magnetico')) {
+    if (buffer.contains('magnetico')) {
       return '1';
     }
 
@@ -188,20 +179,20 @@ class ClisitefCancelamentoService {
   }
 
   @visibleForTesting
-  String process21OR34(int fieldId) {
+  String process21OR34({required int fieldId, required CancelationData data}) {
     switch (fieldId) {
       case 500:
         // Código do supervisor
         return "123456";
       case 516:
         // NSU host
-        return 'NUMERO_DOCUMENTO';
+        return data.nsuHost;
       case 515:
         // Data da transação (ddmmaaaa)
-        return "20250101";
+        return FormatUtils.formatDate(data.dateTime);
       case 146:
         // Valor da transação
-        return "100";
+        return FormatUtils.formatAmount(data.trnAmount);
       default:
         return "";
     }

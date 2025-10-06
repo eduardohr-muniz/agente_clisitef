@@ -3,6 +3,8 @@ import 'package:agente_clisitef/agente_clisitef.dart';
 import 'package:agente_clisitef/src/models/cancelation_data.dart';
 import 'package:agente_clisitef/src/services/clisitef_cancelamento_service.dart';
 
+const String _NSU_HOST = '999060014';
+
 void main() {
   group('🟢 Teste DÉBITO - Cancelamento E2E', () {
     late ClisitefCancelamentoService service;
@@ -59,11 +61,14 @@ void main() {
     });
 
     test('Deve processar fieldIds específicos do Débito', () {
+      // Arrange
+      final data = _createDebitoCancelationData(amount: 1.00);
+
       // Act & Assert
-      expect(service.process21OR34(146), equals('100')); // Valor
-      expect(service.process21OR34(500), equals('123456')); // Supervisor
-      expect(service.process21OR34(515), equals('20250101')); // Data
-      expect(service.process21OR34(516), equals('NUMERO_DOCUMENTO')); // NSU
+      expect(service.process21OR34(fieldId: 146, data: data), equals('100')); // Valor
+      expect(service.process21OR34(fieldId: 500, data: data), equals('123456')); // Supervisor
+      expect(service.process21OR34(fieldId: 515, data: data), equals('06102025')); // Data
+      expect(service.process21OR34(fieldId: 516, data: data), equals(_NSU_HOST)); // NSU
       print('✅ FieldIds Débito processados corretamente');
     });
 
@@ -78,7 +83,7 @@ void main() {
 
     test('Deve processar dados de transação Débito real', () {
       // Dados baseados no retorno fornecido pelo usuário
-      const nsuHost = '999060002';
+      const nsuHost = _NSU_HOST;
       const nsuSitf = '60002';
       const valor = 1.00;
       const dataTransacao = '20251006003013';
@@ -124,6 +129,6 @@ CancelationData _createDebitoCancelationData({
     },
     sessionId: '',
     dateTime: now,
-    nsuHost: invoiceNumber,
+    nsuHost: _NSU_HOST,
   );
 }
