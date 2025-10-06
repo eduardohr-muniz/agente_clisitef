@@ -184,16 +184,18 @@ Future<void> _testCommandProcessing(ClisitefCancelamentoService service) async {
 
 Future<void> _testFieldIdProcessing(ClisitefCancelamentoService service) async {
   // Teste de fieldIds
+  final testData = _createCancelationData(amount: 1.00, invoiceNumber: 'TEST123456');
+
   final fieldTests = [
     {'fieldId': 146, 'expected': '100', 'name': 'Valor'},
     {'fieldId': 500, 'expected': '123456', 'name': 'Supervisor'},
-    {'fieldId': 515, 'expected': '20250101', 'name': 'Data'},
-    {'fieldId': 516, 'expected': 'NUMERO_DOCUMENTO', 'name': 'NSU'},
+    {'fieldId': 515, 'expected': '06102025', 'name': 'Data'},
+    {'fieldId': 516, 'expected': 'TEST123456', 'name': 'NSU'},
     {'fieldId': 999, 'expected': '', 'name': 'Desconhecido'},
   ];
 
   for (final test in fieldTests) {
-    final result = service.process21OR34(test['fieldId'] as int);
+    final result = service.process21OR34(fieldId: test['fieldId'] as int, data: testData);
     final success = result == test['expected'];
     print('   ${success ? "✅" : "❌"} FieldId ${test['fieldId']} (${test['name']}): $result (esperado: ${test['expected']})');
   }
@@ -205,6 +207,7 @@ Future<void> _testFieldIdProcessing(ClisitefCancelamentoService service) async {
     {'commandId': 21, 'expected': true, 'name': 'Menu'},
     {'commandId': 34, 'expected': true, 'name': 'Valor Monetário'},
     {'commandId': 30, 'expected': true, 'name': 'Campo Genérico'},
+    {'commandId': 1, 'expected': false, 'name': 'Conectando'},
     {'commandId': 14, 'expected': false, 'name': 'Aguardar'},
     {'commandId': 0, 'expected': false, 'name': 'Exibir Mensagem'},
   ];

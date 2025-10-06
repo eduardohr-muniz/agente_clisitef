@@ -151,40 +151,55 @@ void main() {
 
     group('📊 Processamento de FieldIds', () {
       test('Deve processar fieldId 146 (Valor) corretamente', () {
+        // Arrange
+        final data = _createTestCancelationData(amount: 1.00);
+
         // Act
-        final result = service.process21OR34(146);
+        final result = service.process21OR34(fieldId: 146, data: data);
 
         // Assert
         expect(result, equals('100'));
       });
 
       test('Deve processar fieldId 500 (Supervisor) corretamente', () {
+        // Arrange
+        final data = _createTestCancelationData();
+
         // Act
-        final result = service.process21OR34(500);
+        final result = service.process21OR34(fieldId: 500, data: data);
 
         // Assert
         expect(result, equals('123456'));
       });
 
       test('Deve processar fieldId 515 (Data) corretamente', () {
+        // Arrange
+        final data = _createTestCancelationData();
+
         // Act
-        final result = service.process21OR34(515);
+        final result = service.process21OR34(fieldId: 515, data: data);
 
         // Assert
-        expect(result, equals('20250101'));
+        expect(result, equals('06102025')); // DDMMYYYY
       });
 
       test('Deve processar fieldId 516 (NSU) corretamente', () {
+        // Arrange
+        final data = _createTestCancelationData(invoiceNumber: 'TEST123456');
+
         // Act
-        final result = service.process21OR34(516);
+        final result = service.process21OR34(fieldId: 516, data: data);
 
         // Assert
-        expect(result, equals('NUMERO_DOCUMENTO'));
+        expect(result, equals('TEST123456')); // NSU Host
       });
 
       test('Deve retornar string vazia para fieldId desconhecido', () {
+        // Arrange
+        final data = _createTestCancelationData();
+
         // Act
-        final result = service.process21OR34(999);
+        final result = service.process21OR34(fieldId: 999, data: data);
 
         // Assert
         expect(result, equals(''));
@@ -214,6 +229,14 @@ void main() {
 
         // Assert
         expect(result, isTrue);
+      });
+
+      test('Deve identificar comando 1 como não interativo', () {
+        // Act
+        final result = service.hasInteraction(1);
+
+        // Assert
+        expect(result, isFalse);
       });
 
       test('Deve identificar comando 14 como não interativo', () {

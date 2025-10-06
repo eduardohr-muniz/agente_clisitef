@@ -76,8 +76,8 @@ void main() {
       expect(service.hasInteraction(21), isTrue);
       expect(service.hasInteraction(34), isTrue);
       expect(service.hasInteraction(30), isTrue);
-      expect(service.hasInteraction(1), isTrue); // Conectando Servidor
       expect(service.hasInteraction(0), isFalse); // Exibir Mensagem
+      expect(service.hasInteraction(14), isFalse); // Aguardar
       print('✅ Comandos interativos Débito identificados');
     });
 

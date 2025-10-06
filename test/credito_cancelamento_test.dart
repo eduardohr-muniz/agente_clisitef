@@ -59,11 +59,14 @@ void main() {
     });
 
     test('Deve processar fieldIds específicos do Crédito', () {
+      // Arrange
+      final data = _createCreditoCancelationData(amount: 50.00);
+
       // Act & Assert
-      expect(service.process21OR34(146), equals('100')); // Valor
-      expect(service.process21OR34(500), equals('123456')); // Supervisor
-      expect(service.process21OR34(515), equals('20250101')); // Data
-      expect(service.process21OR34(516), equals('NUMERO_DOCUMENTO')); // NSU
+      expect(service.process21OR34(fieldId: 146, data: data), equals('5000')); // Valor (50.00 * 100 = 5000)
+      expect(service.process21OR34(fieldId: 500, data: data), equals('123456')); // Supervisor
+      expect(service.process21OR34(fieldId: 515, data: data), equals('06102025')); // Data (DDMMYYYY)
+      expect(service.process21OR34(fieldId: 516, data: data), equals('CRED002')); // NSU
       print('✅ FieldIds Crédito processados corretamente');
     });
 
@@ -71,8 +74,8 @@ void main() {
       expect(service.hasInteraction(21), isTrue);
       expect(service.hasInteraction(34), isTrue);
       expect(service.hasInteraction(30), isTrue);
-      expect(service.hasInteraction(1), isTrue); // Conectando Servidor
       expect(service.hasInteraction(0), isFalse); // Exibir Mensagem
+      expect(service.hasInteraction(14), isFalse); // Aguardar
       print('✅ Comandos interativos Crédito identificados');
     });
 
@@ -100,7 +103,7 @@ void main() {
 
 CancelationData _createCreditoCancelationData({
   double amount = 50.00,
-  String invoiceNumber = '60003',
+  String invoiceNumber = 'CRED002',
   String operator = 'CAIXA',
   int? functionId,
 }) {

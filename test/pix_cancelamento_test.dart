@@ -69,11 +69,14 @@ void main() {
     });
 
     test('Deve processar fieldIds específicos do PIX', () {
+      // Arrange
+      final data = _createPixCancelationData(amount: 1.00, invoiceNumber: 'PIX123456');
+
       // Act & Assert
-      expect(service.process21OR34(146), equals('100')); // Valor
-      expect(service.process21OR34(500), equals('123456')); // Supervisor
-      expect(service.process21OR34(515), equals('20250101')); // Data
-      expect(service.process21OR34(516), equals('NUMERO_DOCUMENTO')); // NSU
+      expect(service.process21OR34(fieldId: 146, data: data), equals('100')); // Valor (1.00 * 100 = 100)
+      expect(service.process21OR34(fieldId: 500, data: data), equals('123456')); // Supervisor
+      expect(service.process21OR34(fieldId: 515, data: data), equals('06102025')); // Data (DDMMYYYY)
+      expect(service.process21OR34(fieldId: 516, data: data), equals('PIX123456')); // NSU Host
 
       print('✅ FieldIds PIX processados corretamente');
     });
@@ -83,6 +86,7 @@ void main() {
       expect(service.hasInteraction(21), isTrue); // Menu
       expect(service.hasInteraction(34), isTrue); // Valor Monetário
       expect(service.hasInteraction(30), isTrue); // Campo Genérico
+      expect(service.hasInteraction(1), isFalse); // Conectando
       expect(service.hasInteraction(14), isFalse); // Aguardar
       expect(service.hasInteraction(0), isFalse); // Exibir Mensagem
 
