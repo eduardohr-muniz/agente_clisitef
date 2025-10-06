@@ -6,6 +6,9 @@ import 'package:flutter/foundation.dart';
 
 /// Serviço para transações pendentes de confirmação
 /// Permite iniciar uma transação e decidir posteriormente se confirmar ou cancelar
+
+const Duration _TIMEOUT_DURATION = Duration(minutes: 2);
+
 class ClisitefCancelamentoService {
   late final CliSiTefRepository _repository;
   late final CliSiTefCoreService _coreService;
@@ -13,6 +16,10 @@ class ClisitefCancelamentoService {
   final CliSiTefConfig _config;
   bool _isInitialized = false;
   String? _currentSessionId;
+
+  DateTime? _startTime;
+
+  bool _forceCancel = false;
 
   ClisitefCancelamentoService({
     required CliSiTefConfig config,
@@ -27,6 +34,23 @@ class ClisitefCancelamentoService {
 
   final ValueNotifier<String> _messageDisplay = ValueNotifier('');
   ValueNotifier<String> get messageDisplay => _messageDisplay;
+
+  void _preventLoop(TransactionResponse response) {
+    if ((response.command ?? 0) < -1) {
+      throw CliSiTefException.internalError(
+        details: 'Erro ao processar transação: ${response.buffer ?? ''}',
+        originalError: response,
+      );
+    }
+    final timeoutExceeded = _startTime != null && DateTime.now().difference(_startTime!) > _TIMEOUT_DURATION;
+    if (timeoutExceeded) {
+      _forceCancel = true;
+    }
+  }
+
+  void cancel() {
+    _forceCancel = true;
+  }
 
   Future<String> _createSession() async {
     await _deleteSession();
@@ -74,6 +98,8 @@ class ClisitefCancelamentoService {
     }
 
     try {
+      _startTime = DateTime.now();
+      _forceCancel = false;
       final sessionId = await _createSession();
 
       final dataWithSessionId = data.copyWith(sessionId: sessionId, functionId: 110);
@@ -97,6 +123,7 @@ class ClisitefCancelamentoService {
 
       while (true) {
         final response = await _repository.continueTransaction(sessionId: sessionId, command: commandId, data: responseData);
+        _preventLoop(response);
 
         commandId = response.command ?? -10;
         fieldId = response.fieldType ?? -10;
@@ -115,10 +142,12 @@ class ClisitefCancelamentoService {
         } else {
           responseData = '';
         }
-        if (commandId == 0 && fieldId == 0) {
-          break;
-        }
+        if (_forceCancel) break;
+        // se o comando for 0 e o campo for 0, precisa finalizar a transação
+        if (commandId == 0 && fieldId == 0) break;
       }
+
+      if (_forceCancel) return false;
 
       await _repository.finishTransaction(
         sessionId: sessionId,

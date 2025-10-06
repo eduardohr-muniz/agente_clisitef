@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import 'package:agente_clisitef/src/core/constants/clisitef_constants.dart';
 
 /// Resposta de uma transação CliSiTef
@@ -213,22 +215,31 @@ class TransactionResponse {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
+
     return other is TransactionResponse &&
         other.serviceStatus == serviceStatus &&
+        other.serviceMessage == serviceMessage &&
         other.clisitefStatus == clisitefStatus &&
         other.sessionId == sessionId &&
+        other.serviceState == serviceState &&
         other.command == command &&
-        other.message == message;
+        other.fieldType == fieldType &&
+        other.buffer == buffer &&
+        other.message == message &&
+        mapEquals(other.additionalData, additionalData);
   }
 
   @override
   int get hashCode {
-    return Object.hash(
-      serviceStatus,
-      clisitefStatus,
-      sessionId,
-      command,
-      message,
-    );
+    return serviceStatus.hashCode ^
+        serviceMessage.hashCode ^
+        clisitefStatus.hashCode ^
+        sessionId.hashCode ^
+        serviceState.hashCode ^
+        command.hashCode ^
+        fieldType.hashCode ^
+        buffer.hashCode ^
+        message.hashCode ^
+        additionalData.hashCode;
   }
 }
