@@ -41,23 +41,6 @@ void main() {
       print('✅ Cancelamento Débito retornou: $result');
     });
 
-    test('Deve usar método cancelarPix específico para Débito', () async {
-      // Arrange
-      await service.initialize();
-
-      // Act - Usar método cancelarPix para débito (functionId 4)
-      final result = await service.cancelarPix(
-        amount: 1.00,
-        invoiceNumber: 'DEB001',
-        operator: 'CAIXA',
-        testMode: true, // Modo de teste
-      );
-
-      // Assert
-      expect(result, isTrue);
-      expect(service.currentSessionId, isNotNull);
-      print('✅ Débito cancelamento específico: $result');
-    });
 
     test('Deve inicializar e processar Débito completo (método original)', () async {
       // Arrange

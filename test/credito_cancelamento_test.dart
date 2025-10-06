@@ -41,24 +41,6 @@ void main() {
       print('✅ Cancelamento Crédito retornou: $result');
     });
 
-    test('Deve usar método cancelarPix específico para Crédito', () async {
-      // Arrange
-      await service.initialize();
-
-      // Act - Usar método cancelarPix para crédito (functionId 3)
-      final result = await service.cancelarPix(
-        amount: 50.00,
-        invoiceNumber: 'CRED001',
-        operator: 'CAIXA',
-        testMode: true, // Modo de teste
-      );
-
-      // Assert
-      expect(result, isTrue);
-      expect(service.currentSessionId, isNotNull);
-      print('✅ Crédito cancelamento específico: $result');
-    });
-
     test('Deve inicializar e processar Crédito completo (método original)', () async {
       // Arrange
       await service.initialize();

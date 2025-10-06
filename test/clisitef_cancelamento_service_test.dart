@@ -1,7 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:agente_clisitef/agente_clisitef.dart';
-import 'package:agente_clisitef/src/models/cancelation_data.dart';
-import 'package:agente_clisitef/src/services/clisitef_cancelamento_service.dart';
 
 /// Testes Unitários e E2E para o ClisitefCancelamentoService
 ///

@@ -117,6 +117,10 @@ class ClisitefCancelamentoService {
             // Menu PIX específico - "1:Pix;2:Pix Troco;"
             if ((response.buffer ?? '').contains('Pix')) {
               responseData = '1'; // Selecionar PIX normal (opção 1)
+            }
+            // Menu cartão específico - "1:Magnetico;2:Digitado;"
+            else if ((response.buffer ?? '').contains('Magnetico') && (response.buffer ?? '').contains('Digitado')) {
+              responseData = '1'; // Sempre Magnético (conforme solicitado pelo usuário)
             } else {
               responseData = process21OR34(fieldId);
             }
