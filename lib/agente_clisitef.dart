@@ -14,6 +14,7 @@ export 'src/models/transaction_response.dart';
 export 'src/models/transaction_result.dart';
 export 'src/models/captura_tardia_transaction.dart';
 export 'src/models/cancelation_data.dart';
+export 'src/models/clisitef_response.dart';
 
 // Repositories
 export 'src/repositories/clisitef_repository.dart';
