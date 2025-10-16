@@ -110,6 +110,7 @@ class ClisitefCancelamentoService {
       await _repository.startTransaction(dataWithSessionId);
 
       String responseData = '';
+      int clisitefStatus = -10;
       int commandId = 0;
       int fieldId = -10;
 
@@ -121,6 +122,7 @@ class ClisitefCancelamentoService {
       );
 
       commandId = firstResponse.command ?? -1;
+
       fieldId = firstResponse.fieldType ?? 1000000000;
       responseData = '';
 
@@ -132,6 +134,7 @@ class ClisitefCancelamentoService {
 
         commandId = response.command ?? -10;
         fieldId = response.fieldType ?? -10;
+        clisitefStatus = response.clisitefStatus;
 
         if (fieldId == -1) {
           _messageDisplay.value = response.buffer ?? '';
@@ -147,9 +150,15 @@ class ClisitefCancelamentoService {
         } else {
           responseData = '';
         }
+        if (commandId == 0 && fieldId == 0 && clisitefStatus == 255) {
+          throw CliSiTefException.internalError(
+            details: 'Erro ao cancelar transação',
+            originalError: response,
+          );
+        }
         if (_forceCancel) break;
         // se o comando for 0 e o campo for 0, precisa finalizar a transação
-        if (commandId == 0 && fieldId == 0 && (response.buffer ?? '').isEmpty) break;
+        if (commandId == 0 && fieldId == 0 && clisitefStatus == 0) break;
       }
 
       if (_forceCancel) return cliSiTefResponse;
