@@ -156,6 +156,7 @@ class StartTransactionUseCase {
   /// Verifica se a resposta indica um erro baseado nos códigos
   bool _isErrorResponse(TransactionResponse response) {
     // Padrão identificado: fieldId 5084 com commandId 22 indica erro
+    if (response.serviceStatus == 1) return true;
 
     if (response.clisitefStatus != 0 && response.clisitefStatus != 10000) {
       return true;
