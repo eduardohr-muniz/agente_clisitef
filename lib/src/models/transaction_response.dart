@@ -116,7 +116,7 @@ class TransactionResponse {
   bool get hasServiceError => serviceStatus == CliSiTefConstants.SERVICE_STATUS_ERROR;
 
   /// Verifica se há erro na transação
-  bool get hasTransactionError => clisitefStatus != 0 && clisitefStatus != CliSiTefConstants.CONTINUE_TRANSACTION;
+  bool get hasTransactionError => clisitefStatus < 0;
 
   /// Obtém a mensagem de erro
   String get errorMessage {
