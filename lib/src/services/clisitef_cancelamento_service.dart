@@ -139,6 +139,14 @@ class ClisitefCancelamentoService {
           _messageDisplay.value = response.buffer ?? '';
         }
 
+        final hasError = _isErrorResponse(response);
+        if (hasError) {
+          throw CliSiTefException.internalError(
+            details: 'Erro ao cancelar transação',
+            originalError: response,
+          );
+        }
+
         final hasInteraction0 = hasInteraction(commandId);
         if (hasInteraction0) {
           if (commandId == 21 && fieldId == -1) {
@@ -177,6 +185,17 @@ class ClisitefCancelamentoService {
         originalError: e,
       );
     }
+  }
+
+  bool _isErrorResponse(TransactionResponse response) {
+    // Padrão identificado: fieldId 5084 com commandId 22 indica erro
+    if (response.serviceStatus == 1) return true;
+
+    if (response.clisitefStatus != 0 && response.clisitefStatus != 10000) {
+      return true;
+    }
+
+    return false;
   }
 
   @visibleForTesting
