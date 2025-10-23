@@ -91,11 +91,6 @@ class StartTransactionUseCase {
         // Preencher campos da resposta atual
         _preencherCampos(cliSiTefFields, currentResponse);
 
-        // Verificar se a resposta indica erro baseado nos códigos
-        if (_isErrorResponse(currentResponse)) {
-          return StartTransactionResult.error(currentResponse, clisitefFields: cliSiTefFields);
-        }
-
         // Se não há comando específico, continuar sem dados
         if (currentResponse.command == null) {
           currentResponse = await _repository.continueTransaction(
@@ -120,6 +115,11 @@ class StartTransactionUseCase {
               command: currentResponse.command!,
             );
           }
+        }
+
+        // Verificar se a resposta indica erro baseado nos códigos
+        if (_isErrorInClisistefStatus(currentResponse.clisitefStatus)) {
+          return StartTransactionResult.error(currentResponse, clisitefFields: cliSiTefFields);
         }
 
         if (!currentResponse.isServiceSuccess) {
@@ -159,9 +159,9 @@ class StartTransactionUseCase {
   }
 
   /// Verifica se a resposta indica um erro baseado nos códigos
-  bool _isErrorResponse(TransactionResponse response) {
-    if (response.clisitefStatus != 0 && response.clisitefStatus != 10000) {
-      _talker?.error('_isErrorResponse: clisitefStatus: ${response.clisitefStatus}');
+  bool _isErrorInClisistefStatus(int clisitefStatus) {
+    if (clisitefStatus != 0 && clisitefStatus != 10000) {
+      _talker?.error('_isErrorResponse: clisitefStatus: $clisitefStatus');
       return true;
     }
 
