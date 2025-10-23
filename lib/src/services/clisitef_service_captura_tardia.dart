@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:agente_clisitef/agente_clisitef.dart';
 import 'package:agente_clisitef/src/core/exceptions/clisitef_error_codes.dart';
 import 'package:agente_clisitef/src/core/utils/format_utils.dart';
-import 'package:agente_clisitef/src/models/clisitef_response.dart';
 
 /// Serviço para transações pendentes de confirmação
 /// Permite iniciar uma transação e decidir posteriormente se confirmar ou cancelar

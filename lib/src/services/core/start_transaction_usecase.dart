@@ -1,3 +1,5 @@
+import 'package:talker/talker.dart';
+
 import '../../core/services/message_manager.dart';
 import '../../core/utils/format_utils.dart';
 import '../../models/transaction_data.dart';
@@ -11,8 +13,11 @@ class StartTransactionUseCase {
   final CliSiTefRepository _repository;
   final AgenteClisitefMessageManager _messageManager = AgenteClisitefMessageManager.instance;
   final bool _useSmartPixSelection;
+  final Talker? _talker;
 
-  StartTransactionUseCase(this._repository, {bool useSmartPixSelection = false}) : _useSmartPixSelection = useSmartPixSelection;
+  StartTransactionUseCase(this._repository, {bool useSmartPixSelection = false, Talker? talker})
+      : _useSmartPixSelection = useSmartPixSelection,
+        _talker = talker;
 
   /// Executa o use case de iniciar transação
   ///
@@ -159,6 +164,7 @@ class StartTransactionUseCase {
     if (response.serviceStatus == 1) return true;
 
     if (response.clisitefStatus != 0 && response.clisitefStatus != 10000) {
+      _talker?.error('_isErrorResponse: clisitefStatus: ${response.clisitefStatus}');
       return true;
     }
 
