@@ -91,40 +91,17 @@ class StartTransactionUseCase {
         // Preencher campos da resposta atual
         _preencherCampos(cliSiTefFields, currentResponse);
 
-        // Se não há comando específico, continuar sem dados
-        if (currentResponse.command == null) {
-          currentResponse = await _repository.continueTransaction(
-            sessionId: sessionId,
-            command: 0,
-          );
-        }
-
         // Processar comando específico
         final commandResult = await _processCommand(currentResponse);
 
-        // Se o comando foi processado, continuar com os dados coletados
-        if (commandResult != null) {
-          currentResponse = await _repository.continueTransaction(
-            sessionId: sessionId,
-            command: currentResponse.command!,
-            data: commandResult,
-          );
-        }
-
-        // Se o comando não foi processado, continuar sem dados
-        if (commandResult == null) {
-          currentResponse = await _repository.continueTransaction(
-            sessionId: sessionId,
-            command: currentResponse.command!,
-          );
-        }
+        currentResponse = await _repository.continueTransaction(
+          sessionId: sessionId,
+          command: currentResponse.command ?? 0,
+          data: commandResult,
+        );
 
         // Verificar se a resposta indica erro baseado nos códigos
-        if (_isErrorInClisistefStatus(currentResponse.clisitefStatus)) {
-          return StartTransactionResult.error(currentResponse, clisitefFields: cliSiTefFields);
-        }
-
-        if (!currentResponse.isServiceSuccess) {
+        if (_hasError(currentResponse)) {
           return StartTransactionResult.error(currentResponse, clisitefFields: cliSiTefFields);
         }
       }
@@ -161,9 +138,13 @@ class StartTransactionUseCase {
   }
 
   /// Verifica se a resposta indica um erro baseado nos códigos
-  bool _isErrorInClisistefStatus(int clisitefStatus) {
-    if (clisitefStatus != 0 && clisitefStatus != 10000) {
-      _talker?.error('_isErrorResponse: clisitefStatus: $clisitefStatus');
+  bool _hasError(TransactionResponse response) {
+    if (response.clisitefStatus != 0 && response.clisitefStatus != 10000) {
+      _talker?.error('_isErrorResponse: clisitefStatus: ${response.clisitefStatus}');
+      return true;
+    }
+    if (!response.isServiceSuccess) {
+      _talker?.error('_isErrorResponse: isServiceSuccess: ${response.isServiceSuccess}');
       return true;
     }
 
