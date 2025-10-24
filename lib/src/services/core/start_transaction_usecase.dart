@@ -91,11 +91,6 @@ class StartTransactionUseCase {
         // Preencher campos da resposta atual
         _preencherCampos(cliSiTefFields, currentResponse);
 
-        // Verificar se a resposta indica erro baseado nos códigos
-        if (_isErrorResponse(currentResponse)) {
-          return StartTransactionResult.error(currentResponse, clisitefFields: cliSiTefFields);
-        }
-
         // Processar comando específico
         final commandResult = await _processCommand(currentResponse);
 
@@ -104,6 +99,11 @@ class StartTransactionUseCase {
           command: currentResponse.command ?? 0,
           data: commandResult,
         );
+
+        // Verificar se a resposta indica erro baseado nos códigos
+        if (_hasError(currentResponse)) {
+          return StartTransactionResult.error(currentResponse, clisitefFields: cliSiTefFields);
+        }
       }
 
       // Preencher campos da resposta final
@@ -138,10 +138,7 @@ class StartTransactionUseCase {
   }
 
   /// Verifica se a resposta indica um erro baseado nos códigos
-  bool _isErrorResponse(TransactionResponse response) {
-    // Padrão identificado: fieldId 5084 com commandId 22 indica erro
-    if (response.serviceStatus == 1) return true;
-
+  bool _hasError(TransactionResponse response) {
     if (response.clisitefStatus != 0 && response.clisitefStatus != 10000) {
       _talker?.error('_isErrorResponse: clisitefStatus: ${response.clisitefStatus}');
       return true;
@@ -305,4 +302,6 @@ class StartTransactionResult {
       errorMessage: response.errorMessage,
     );
   }
+}
+ }
 }
