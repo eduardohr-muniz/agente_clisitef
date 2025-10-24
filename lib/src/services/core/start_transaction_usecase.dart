@@ -86,7 +86,7 @@ class StartTransactionUseCase {
         );
       }
 
-      // Loop de processamento iterativo
+      // Loop de processamento iterativo [CONTINUE]
       while (currentResponse.shouldContinue) {
         // Preencher campos da resposta atual
         _preencherCampos(cliSiTefFields, currentResponse);
@@ -95,26 +95,28 @@ class StartTransactionUseCase {
         if (currentResponse.command == null) {
           currentResponse = await _repository.continueTransaction(
             sessionId: sessionId,
-            command: 0, // COMMAND_DISPLAY_MESSAGE
+            command: 0,
           );
-        } else {
-          // Processar comando específico
-          final commandResult = await _processCommand(currentResponse);
+        }
 
-          if (commandResult != null) {
-            // Enviar dados coletados
-            currentResponse = await _repository.continueTransaction(
-              sessionId: sessionId,
-              command: currentResponse.command!,
-              data: commandResult,
-            );
-          } else {
-            // Comando não processado, continuar sem dados
-            currentResponse = await _repository.continueTransaction(
-              sessionId: sessionId,
-              command: currentResponse.command!,
-            );
-          }
+        // Processar comando específico
+        final commandResult = await _processCommand(currentResponse);
+
+        // Se o comando foi processado, continuar com os dados coletados
+        if (commandResult != null) {
+          currentResponse = await _repository.continueTransaction(
+            sessionId: sessionId,
+            command: currentResponse.command!,
+            data: commandResult,
+          );
+        }
+
+        // Se o comando não foi processado, continuar sem dados
+        if (commandResult == null) {
+          currentResponse = await _repository.continueTransaction(
+            sessionId: sessionId,
+            command: currentResponse.command!,
+          );
         }
 
         // Verificar se a resposta indica erro baseado nos códigos
