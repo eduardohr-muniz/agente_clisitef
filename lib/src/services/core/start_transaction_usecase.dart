@@ -91,6 +91,11 @@ class StartTransactionUseCase {
         // Preencher campos da resposta atual
         _preencherCampos(cliSiTefFields, currentResponse);
 
+        // Verificar se a resposta indica erro baseado nos códigos
+        if (_isErrorResponse(currentResponse)) {
+          return StartTransactionResult.error(currentResponse, clisitefFields: cliSiTefFields);
+        }
+
         // Processar comando específico
         final commandResult = await _processCommand(currentResponse);
 
@@ -99,11 +104,6 @@ class StartTransactionUseCase {
           command: currentResponse.command ?? 0,
           data: commandResult,
         );
-
-        // Verificar se a resposta indica erro baseado nos códigos
-        if (_isErrorResponse(currentResponse)) {
-          return StartTransactionResult.error(currentResponse, clisitefFields: cliSiTefFields);
-        }
       }
 
       // Preencher campos da resposta final
