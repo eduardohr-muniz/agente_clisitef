@@ -101,7 +101,7 @@ class StartTransactionUseCase {
         );
 
         // Verificar se a resposta indica erro baseado nos códigos
-        if (_hasError(currentResponse)) {
+        if (_isErrorResponse(currentResponse)) {
           return StartTransactionResult.error(currentResponse, clisitefFields: cliSiTefFields);
         }
       }
@@ -138,7 +138,10 @@ class StartTransactionUseCase {
   }
 
   /// Verifica se a resposta indica um erro baseado nos códigos
-  bool _hasError(TransactionResponse response) {
+  bool _isErrorResponse(TransactionResponse response) {
+    // Padrão identificado: fieldId 5084 com commandId 22 indica erro
+    if (response.serviceStatus == 1) return true;
+
     if (response.clisitefStatus != 0 && response.clisitefStatus != 10000) {
       _talker?.error('_isErrorResponse: clisitefStatus: ${response.clisitefStatus}');
       return true;
