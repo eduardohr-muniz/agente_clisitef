@@ -138,7 +138,7 @@ class TransactionData {
   Map<String, dynamic> toMap() {
     final map = <String, dynamic>{
       CliSiTefConstants.PARAM_FUNCTION_ID: functionId.toString(),
-      CliSiTefConstants.PARAM_TRN_AMOUNT: trnAmount,
+      CliSiTefConstants.PARAM_TRN_AMOUNT: trnAmount.toStringAsFixed(2),
       CliSiTefConstants.PARAM_TAX_INVOICE_NUMBER: taxInvoiceNumber,
       CliSiTefConstants.PARAM_TAX_INVOICE_DATE: FormatUtils.formatDate(taxInvoiceDate),
       CliSiTefConstants.PARAM_TAX_INVOICE_TIME: FormatUtils.formatTime(taxInvoiceTime),
