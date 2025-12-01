@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:agente_clisitef/agente_clisitef.dart';
-import 'package:agente_clisitef/src/core/utils/format_utils.dart';
-import 'package:agente_clisitef/src/core/utils/payment_method.dart';
+
 import 'package:flutter/foundation.dart';
 
 /// Serviço para transações pendentes de confirmação

@@ -1,7 +1,8 @@
+// ignore_for_file: constant_identifier_names
+
 import 'dart:async';
 import 'package:agente_clisitef/agente_clisitef.dart';
-import 'package:agente_clisitef/src/core/utils/format_utils.dart';
-import 'package:agente_clisitef/src/core/utils/payment_method.dart';
+
 import 'package:flutter/foundation.dart';
 
 /// Serviço para transações pendentes de confirmação
@@ -9,7 +10,7 @@ import 'package:flutter/foundation.dart';
 
 const Duration _TIMEOUT_DURATION = Duration(minutes: 2);
 
-class ClisitefCancelamentoService {
+class ClisitefReimpressaoComprovanteService {
   late final CliSiTefRepository _repository;
   late final CliSiTefCoreService _coreService;
 
@@ -21,7 +22,7 @@ class ClisitefCancelamentoService {
 
   bool _forceCancel = false;
 
-  ClisitefCancelamentoService({
+  ClisitefReimpressaoComprovanteService({
     required CliSiTefConfig config,
     CliSiTefRepository? repository,
   }) : _config = config {
@@ -87,7 +88,7 @@ class ClisitefCancelamentoService {
 
   /// Inicia uma transação e retorna um modelo pendente
   /// A transação NÃO é finalizada automaticamente
-  Future<CliSiTefResponse> start(CancelationData data) async {
+  Future<void> start(CancelationData data) async {
     if (!_isInitialized) {
       throw CliSiTefException.serviceNotInitialized(
         details: 'Serviço não foi inicializado antes de iniciar transação',
@@ -95,8 +96,6 @@ class ClisitefCancelamentoService {
     }
 
     try {
-      CliSiTefResponse cliSiTefResponse = CliSiTefResponse();
-
       _startTime = DateTime.now();
       _forceCancel = false;
       final sessionId = await _createSession();
@@ -125,7 +124,6 @@ class ClisitefCancelamentoService {
       while (true) {
         final response = await _repository.continueTransaction(sessionId: sessionId, command: commandId, data: responseData);
 
-        if (response.fieldType != null) cliSiTefResponse.onFieldId(fieldId: response.fieldType!, buffer: response.buffer ?? '');
         _preventLoop(response);
 
         commandId = response.command ?? -10;
@@ -166,8 +164,6 @@ class ClisitefCancelamentoService {
         if (commandId == 0 && fieldId == 0 && clisitefStatus == 0) break;
       }
 
-      if (_forceCancel) return cliSiTefResponse;
-
       await _repository.finishTransaction(
         sessionId: sessionId,
         confirm: true,
@@ -176,7 +172,7 @@ class ClisitefCancelamentoService {
         taxInvoiceTime: data.taxInvoiceTime.toString().substring(11, 17).replaceAll(':', ''), // HHMMSS
       );
 
-      return cliSiTefResponse;
+      return;
     } catch (e) {
       throw CliSiTefException.internalError(
         details: 'Erro ao iniciar transação: $e',
@@ -202,33 +198,7 @@ class ClisitefCancelamentoService {
 
     if (buffer.contains("teste de comunicacao")) {
       //21;-1 1:Teste de comunicacao;2:Reimpressao de comprovante;3:Cancelamento de transacao;4:Pre-autorizacao;5:Consulta parcelas CDC;6:Consulta Private Label;7:Consulta saque e saque Fininvest;8:Consulta Saldo Debito;9:Consulta Saldo Credito;10:Outros Cielo;11:Carga forcada de tabelas no pinpad (Servidor);12:Consulta Saque Parcelado;13:Consulta Parcelas Cred. Conductor;14:Consulta Parcelas Cred. MarketPay;15:Saque Carteira Digital;16:Recarga Carteira Digital;17:Consulta Saldo Carteira Dig
-      return '3';
-    }
-    if (buffer.contains('magnetico')) {
-      return '1';
-    }
-
-    if (buffer.contains("pix")) {
-      final options = buffer.split(';');
-      final option = options.firstWhere(
-        (e) => !e.contains('troco'),
-        orElse: () => options.isNotEmpty ? options.first : '',
-      );
-      final onlyNumber = RegExp(r'\d+').firstMatch(option)?.group(0);
-      return onlyNumber ?? '1';
-    }
-
-    if (buffer.contains("cancelamento de cartao de debito")) {
-      final method = PaymentMethod.fromCode(data.functionId);
-      if (method == PaymentMethod.DEBITO) {
-        return '1';
-      }
-      if (method == PaymentMethod.CREDITO) {
-        return '2';
-      }
-      if (method == PaymentMethod.PIX) {
-        return '10';
-      }
+      return '11';
     }
 
     return '';
@@ -240,15 +210,7 @@ class ClisitefCancelamentoService {
       case 500:
         // Código do supervisor
         return "123456";
-      case 516:
-        // NSU host
-        return data.nsuHost;
-      case 515:
-        // Data da transação (ddmmaaaa)
-        return FormatUtils.formatDateDDMMYYYY(data.dateTime);
-      case 146:
-        // Valor da transação
-        return FormatUtils.formatAmount(data.trnAmount);
+
       default:
         return "";
     }
