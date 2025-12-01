@@ -726,4 +726,17 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
   void dispose() {
     _dio.close();
   }
+
+  @override
+  Future<bool> checkStatus() async {
+    try {
+      final response = await _dio.get(
+        CliSiTefConstants.STATE_ENDPOINT,
+      );
+
+      return response.statusCode != 501;
+    } catch (e) {
+      return false;
+    }
+  }
 }

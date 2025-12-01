@@ -143,6 +143,7 @@ class StartTransactionUseCase {
       _talker?.error('_isErrorResponse: clisitefStatus: ${response.clisitefStatus}');
       return true;
     }
+
     if (!response.isServiceSuccess) {
       _talker?.error('_isErrorResponse: isServiceSuccess: ${response.isServiceSuccess}');
       return true;

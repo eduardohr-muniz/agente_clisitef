@@ -9,6 +9,8 @@ abstract class CliSiTefRepository {
   /// Inicia uma transação
   Future<TransactionResponse> startTransaction(TransactionData data);
 
+  Future<bool> checkStatus();
+
   /// Continua uma transação
   Future<TransactionResponse> continueTransaction({
     required String sessionId,

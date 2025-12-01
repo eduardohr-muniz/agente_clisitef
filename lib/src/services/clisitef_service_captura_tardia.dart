@@ -34,6 +34,7 @@ class CliSiTefServiceCapturaTardia {
     final sessionResponse = await _repository.createSession();
 
     if (!sessionResponse.isServiceSuccess) {
+      config.talker?.error('Erro ao criar sessão: ${sessionResponse.errorMessage}');
       throw CliSiTefException.fromCode(
         sessionResponse.clisitefStatus,
         details: 'Erro ao criar sessão: ${sessionResponse.errorMessage}',
@@ -49,6 +50,10 @@ class CliSiTefServiceCapturaTardia {
 
     await _repository.deleteSession();
     _currentSessionId = null;
+  }
+
+  Future<bool> checkStatus() async {
+    return await _repository.checkStatus();
   }
 
   /// Inicializa o serviço
