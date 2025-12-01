@@ -28,3 +28,5 @@ export 'src/services/clisitef_service_captura_tardia.dart';
 export 'src/services/clisitef_cancelamento_service.dart';
 export 'src/services/pinpad_service.dart' show PinPadService, CardReadResult, PasswordReadResult;
 export 'src/services/core/start_transaction_usecase.dart';
+export 'src/services/clisitef_forcar_carga_tabela_service.dart';
+export 'src/services/clisitef_reimpressao_comprovante_service.dart';
