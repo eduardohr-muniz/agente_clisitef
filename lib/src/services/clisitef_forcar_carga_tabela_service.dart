@@ -10,7 +10,7 @@ import 'package:flutter/foundation.dart';
 
 const Duration _TIMEOUT_DURATION = Duration(minutes: 2);
 
-class ClisitefReimpressaoComprovanteService {
+class ClisitefForcarCargaService {
   late final CliSiTefRepository _repository;
   late final CliSiTefCoreService _coreService;
 
@@ -22,7 +22,7 @@ class ClisitefReimpressaoComprovanteService {
 
   bool _forceCancel = false;
 
-  ClisitefReimpressaoComprovanteService({
+  ClisitefForcarCargaService({
     required CliSiTefConfig config,
     CliSiTefRepository? repository,
   }) : _config = config {
@@ -88,7 +88,7 @@ class ClisitefReimpressaoComprovanteService {
 
   /// Inicia uma transação e retorna um modelo pendente
   /// A transação NÃO é finalizada automaticamente
-  Future<void> start(CancelationData data) async {
+  Future<void> start(TransactionData data) async {
     if (!_isInitialized) {
       throw CliSiTefException.serviceNotInitialized(
         details: 'Serviço não foi inicializado antes de iniciar transação',
@@ -193,7 +193,7 @@ class ClisitefReimpressaoComprovanteService {
   }
 
   @visibleForTesting
-  String processMinusOne(String buffer, CancelationData data) {
+  String processMinusOne(String buffer, TransactionData data) {
     buffer = buffer.toLowerCase().trim();
 
     if (buffer.contains("teste de comunicacao")) {
@@ -205,7 +205,7 @@ class ClisitefReimpressaoComprovanteService {
   }
 
   @visibleForTesting
-  String process21OR34({required int fieldId, required CancelationData data}) {
+  String process21OR34({required int fieldId, required TransactionData data}) {
     switch (fieldId) {
       case 500:
         // Código do supervisor

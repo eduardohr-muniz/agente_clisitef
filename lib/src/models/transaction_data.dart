@@ -234,6 +234,30 @@ class TransactionData {
       sessionId,
     );
   }
+
+  TransactionData copyWith({
+    int? functionId,
+    double? trnAmount,
+    String? taxInvoiceNumber,
+    DateTime? taxInvoiceDate,
+    DateTime? taxInvoiceTime,
+    String? cashierOperator,
+    Map<String, String>? trnAdditionalParameters,
+    Map<String, String>? trnInitParameters,
+    String? sessionId,
+  }) {
+    return TransactionData(
+      functionId: functionId ?? this.functionId,
+      trnAmount: trnAmount ?? this.trnAmount,
+      taxInvoiceNumber: taxInvoiceNumber ?? this.taxInvoiceNumber,
+      taxInvoiceDate: taxInvoiceDate ?? this.taxInvoiceDate,
+      taxInvoiceTime: taxInvoiceTime ?? this.taxInvoiceTime,
+      cashierOperator: cashierOperator ?? this.cashierOperator,
+      trnAdditionalParameters: trnAdditionalParameters ?? this.trnAdditionalParameters,
+      trnInitParameters: trnInitParameters ?? this.trnInitParameters,
+      sessionId: sessionId ?? this.sessionId,
+    );
+  }
 }
 
 /// Dados de produto para Auto-Atendimento (obsoleto na nova especificação)

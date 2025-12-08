@@ -84,12 +84,12 @@ class ClisitefReimpressaoComprovanteService {
 
   @visibleForTesting
   bool hasInteraction(int commandId) {
-    return commandId == 21 || commandId == 34 || commandId == 30;
+    return commandId == 21 || commandId == 34 || commandId == 30 || commandId == 20;
   }
 
   /// Inicia uma transação e retorna um modelo pendente
   /// A transação NÃO é finalizada automaticamente
-  Future<CliSiTefResponse> start(CancelationData data) async {
+  Future<CliSiTefResponse> start(TransactionData data) async {
     if (!_isInitialized) {
       throw CliSiTefException.serviceNotInitialized(
         details: 'Serviço não foi inicializado antes de iniciar transação',
@@ -148,7 +148,7 @@ class ClisitefReimpressaoComprovanteService {
 
         final hasInteraction0 = hasInteraction(commandId);
         if (hasInteraction0) {
-          if (commandId == 21 && fieldId == -1) {
+          if (fieldId == -1) {
             responseData = processMinusOne(response.buffer ?? '', data);
           } else {
             responseData = process21OR34(fieldId: fieldId, data: data);
@@ -198,29 +198,30 @@ class ClisitefReimpressaoComprovanteService {
   }
 
   @visibleForTesting
-  String processMinusOne(String buffer, CancelationData data) {
+  String processMinusOne(String buffer, TransactionData data) {
     buffer = buffer.toLowerCase().trim();
 
     if (buffer.contains("teste de comunicacao")) {
       //21;-1 1:Teste de comunicacao;2:Reimpressao de comprovante;3:Cancelamento de transacao;4:Pre-autorizacao;5:Consulta parcelas CDC;6:Consulta Private Label;7:Consulta saque e saque Fininvest;8:Consulta Saldo Debito;9:Consulta Saldo Credito;10:Outros Cielo;11:Carga forcada de tabelas no pinpad (Servidor);12:Consulta Saque Parcelado;13:Consulta Parcelas Cred. Conductor;14:Consulta Parcelas Cred. MarketPay;15:Saque Carteira Digital;16:Recarga Carteira Digital;17:Consulta Saldo Carteira Dig
       return '2';
     }
-    if (buffer.contains('Ultimo comprovante')) {
+    if (buffer.contains('ultimo comprovante')) {
       return '2';
+    }
+    if (buffer.contains('conf.reimpressao')) {
+      return '0';
     }
 
     return '';
   }
 
   @visibleForTesting
-  String process21OR34({required int fieldId, required CancelationData data}) {
+  String process21OR34({required int fieldId, required TransactionData data}) {
     switch (fieldId) {
       case 500:
         // Código do supervisor
         return "123456";
-      case 516:
-        // NSU host
-        return data.nsuHost;
+
       default:
         return "";
     }
