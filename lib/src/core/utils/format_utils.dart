@@ -4,7 +4,7 @@ import 'package:agente_clisitef/src/core/constants/clisitef_constants.dart';
 class FormatUtils {
   /// Formata valor monetário para o padrão CliSiTef (com vírgula como separador decimal)
   static String formatAmount(double amount) {
-    return formatAmountString(amount.toStringAsFixed(2));
+    return formatAmountString(amount.toStringAsFixed(2)).replaceAll(',', '').replaceAll('.', '');
   }
 
   /// Formata valor monetário para o padrão CliSiTef (com vírgula como separador decimal)
