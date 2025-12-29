@@ -132,7 +132,7 @@ class ClisitefCancelamentoService {
         fieldId = response.fieldType ?? -10;
         clisitefStatus = response.clisitefStatus;
 
-        if (fieldId == -1) {
+        if (fieldId == -1 || (fieldId >= 5000 && fieldId <= 6000)) {
           AgenteClisitefMessageManager.instance.messageCashier.value = response.buffer ?? '';
           AgenteClisitefMessageManager.instance.messageOperator.value = response.buffer ?? '';
         }
