@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:agente_clisitef/agente_clisitef.dart';
 import 'package:agente_clisitef/src/core/utils/format_utils.dart';
+import 'package:agente_clisitef/src/core/utils/message_cashier_utils.dart';
 import 'package:agente_clisitef/src/core/utils/payment_method.dart';
 import 'package:flutter/foundation.dart';
 
@@ -132,10 +133,7 @@ class ClisitefCancelamentoService {
         fieldId = response.fieldType ?? -10;
         clisitefStatus = response.clisitefStatus;
 
-        if (fieldId == -1 || (fieldId >= 5000 && fieldId <= 6000)) {
-          AgenteClisitefMessageManager.instance.messageCashier.value = response.buffer ?? '';
-          AgenteClisitefMessageManager.instance.messageOperator.value = response.buffer ?? '';
-        }
+        MessageCashierUtils.parseMessage(commandId, response.buffer ?? '');
 
         final hasError = _isErrorResponse(response);
         if (hasError) {
