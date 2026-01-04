@@ -53,7 +53,9 @@ class CliSiTefServiceCapturaTardia {
   }
 
   Future<bool> checkStatus() async {
-    return await _repository.checkStatus();
+    final serviceStatus = await _repository.checkStatus();
+    final pinpadStatus = await _pinpadService.checkPresence();
+    return serviceStatus && pinpadStatus;
   }
 
   /// Inicializa o serviço
