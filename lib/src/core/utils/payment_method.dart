@@ -10,7 +10,7 @@ enum PaymentMethod {
       case PaymentMethod.CREDITO:
         return 3;
       case PaymentMethod.DEBITO:
-        return 4;
+        return 2;
       case PaymentMethod.PIX:
         return 122;
     }
@@ -19,7 +19,7 @@ enum PaymentMethod {
   static PaymentMethod fromCode(int code) {
     return switch (code) {
       3 => PaymentMethod.CREDITO,
-      4 => PaymentMethod.DEBITO,
+      2 => PaymentMethod.DEBITO,
       122 => PaymentMethod.PIX,
       _ => PaymentMethod.PIX,
     };
