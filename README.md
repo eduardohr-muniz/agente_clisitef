@@ -223,8 +223,9 @@ void exemploDadosPersonalizados() async {
         'param2': 'valor2',
       },
       trnInitParameters: {
-        'init1': 'valor1',
-        'init2': 'valor2',
+        // ParmsClient: CNPJ do estabelecimento (1) e CNPJ da automação (2)
+        // Formato: ParmsClient=1=CNPJ_ESTABELECIMENTO;2=CNPJ_AUTOMACAO
+        'ParmsClient': '1=31406434895111;2=12523654185985',
       },
     );
 
@@ -286,6 +287,32 @@ try {
 | -15 | Sistema cancelou automaticamente |
 | -1 | Erro de comunicação |
 | -3 | Erro de configuração |
+| 10000 (commandId 22) | Terminal inoperante, CNPJ/CPF divergente |
+
+### Resolvendo Erro de CNPJ/CPF Divergente
+
+Se você receber o erro **"Terminal inoperante, CNPJ/CPF divergente"** (clisitefStatus: 10000, commandId: 22), você precisa passar o CNPJ nos parâmetros de inicialização (`trnInitParameters`):
+
+```dart
+final transactionData = TransactionData.payment(
+  functionId: 3,
+  trnAmount: 100.00,
+  taxInvoiceNumber: '123456',
+  taxInvoiceDate: DateTime.now(),
+  taxInvoiceTime: DateTime.now(),
+  trnInitParameters: {
+    // ParmsClient: CNPJ do estabelecimento (1) e CNPJ da automação (2)
+    // Formato: ParmsClient=1=CNPJ_ESTABELECIMENTO;2=CNPJ_AUTOMACAO
+    'ParmsClient': '1=31406434895111;2=12523654185985',
+  },
+);
+```
+
+**Onde:**
+- `1` = CNPJ do Estabelecimento (14 dígitos, sem formatação)
+- `2` = CNPJ da empresa que desenvolveu a automação comercial (14 dígitos, sem formatação)
+
+**Importante:** Os CNPJs devem ser passados sem formatação (apenas números) e devem corresponder aos CNPJs cadastrados no SiTef.
 
 ## 📚 API Reference
 
