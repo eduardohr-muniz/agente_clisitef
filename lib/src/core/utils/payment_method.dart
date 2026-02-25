@@ -21,7 +21,7 @@ enum PaymentMethod {
       3 => PaymentMethod.CREDITO,
       2 => PaymentMethod.DEBITO,
       122 => PaymentMethod.PIX,
-      _ => PaymentMethod.PIX,
+      _ => PaymentMethod.DEBITO,
     };
   }
 }
