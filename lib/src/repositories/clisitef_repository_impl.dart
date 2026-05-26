@@ -691,7 +691,10 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
   @override
   Future<bool> checkPinPadPresence() async {
     try {
-      if (!_isInitialized || _currentSessionId == null) {
+      // Busca a sessão ativa no servidor para garantir que o sessionId está sincronizado.
+      // Sem isso, o isPresent seria enviado com um sessionId stale e retornaria "sessionId errado."
+      final sessionResponse = await getSession();
+      if (!sessionResponse.isServiceSuccess || _currentSessionId == null) {
         return false;
       }
 
