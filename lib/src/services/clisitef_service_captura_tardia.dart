@@ -97,7 +97,11 @@ class CliSiTefServiceCapturaTardia {
           details: 'Serviço não foi inicializado antes de iniciar transação',
         );
       }
-      await _createSession();
+      // Reutiliza a sessão existente (criada em initialize()) para evitar DELETE+POST
+      // desnecessário a cada transação. Só cria nova se a sessão foi perdida.
+      if (_currentSessionId == null) {
+        await _createSession();
+      }
       final dataWithSessionId = TransactionData(
         functionId: data.functionId,
         trnAmount: data.trnAmount,
@@ -148,17 +152,19 @@ class CliSiTefServiceCapturaTardia {
         clisitefFields: result.clisitefFields ?? CliSiTefResponse(),
         invoiceDate: data.taxInvoiceDate,
         invoiceTime: data.taxInvoiceTime,
-        onFinish: () {
-          _deleteSession();
-        },
+        // Não deletar a sessão após finish — o AgenteCliSiTef preserva a sessão
+        // após finishTransaction, permitindo reutilização na próxima transação
+        // e evitando o ciclo reconectar → criar sessão → deletar → criar.
+        onFinish: () {},
       );
     } catch (e) {
-      // Se já é uma CliSiTefException, rethrow
+      // Em erro, invalida a sessão local para forçar nova criação no próximo uso.
+      _currentSessionId = null;
+
       if (e is CliSiTefException) {
         rethrow;
       }
 
-      // Converter erro genérico para CliSiTefException
       throw CliSiTefException.internalError(
         details: 'Erro inesperado na transação: $e',
         originalError: e,
@@ -330,6 +336,7 @@ class CliSiTefServiceCapturaTardia {
     }
   }
 
+ 
   /// Define mensagem no PinPad com validação (delegando para o PinPadService)
   Future<int> setPinPadMessageValidated(String message) async {
     try {

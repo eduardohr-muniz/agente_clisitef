@@ -699,7 +699,8 @@ class CliSiTefRepositoryImpl implements CliSiTefRepository {
       }
 
       final response = await isPinPadPresent(sessionId: _currentSessionId!);
-      return response.isServiceSuccess && response.clisitefStatus == CliSiTefConstants.SUCCESS;
+      // VerificaPresencaPinPad retorna 1 = presente, 0 = ausente (semântica inversa ao SUCCESS)
+      return response.isServiceSuccess && response.clisitefStatus == 1;
     } catch (e) {
       _talker.error('Erro ao verificar presença do PinPad', e);
       return false;
