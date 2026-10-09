@@ -102,17 +102,8 @@ class CliSiTefServiceCapturaTardia {
       if (_currentSessionId == null) {
         await _createSession();
       }
-      final dataWithSessionId = TransactionData(
-        functionId: data.functionId,
-        trnAmount: data.trnAmount,
-        taxInvoiceNumber: data.taxInvoiceNumber,
-        taxInvoiceDate: data.taxInvoiceDate,
-        taxInvoiceTime: data.taxInvoiceTime,
-        cashierOperator: data.cashierOperator,
-        trnAdditionalParameters: data.trnAdditionalParameters,
-        trnInitParameters: data.trnInitParameters,
-        sessionId: _currentSessionId,
-      );
+      // copyWith preserva todos os campos (inclusive installments), trocando só a sessão.
+      final dataWithSessionId = data.copyWith(sessionId: _currentSessionId);
       // Usar o use case para processar a transação com seleção inteligente de PIX
       final useCase = StartTransactionUseCase(_repository, useSmartPixSelection: true);
       final result = await useCase.execute(

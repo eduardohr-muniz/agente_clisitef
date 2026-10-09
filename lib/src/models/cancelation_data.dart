@@ -16,6 +16,7 @@ class CancelationData extends TransactionData {
     super.trnAdditionalParameters = const {},
     super.trnInitParameters = const {},
     super.sessionId,
+    super.installments,
   });
 
   CancelationData copyWith({
@@ -30,6 +31,7 @@ class CancelationData extends TransactionData {
     Map<String, String>? trnAdditionalParameters,
     Map<String, String>? trnInitParameters,
     String? sessionId,
+    int? installments,
   }) {
     return CancelationData(
       functionId: functionId ?? this.functionId,
@@ -41,6 +43,7 @@ class CancelationData extends TransactionData {
       trnAdditionalParameters: trnAdditionalParameters ?? this.trnAdditionalParameters,
       trnInitParameters: trnInitParameters ?? this.trnInitParameters,
       sessionId: sessionId ?? this.sessionId,
+      installments: installments ?? this.installments,
       dateTime: dateTime ?? this.dateTime,
       nsuHost: nsuHost ?? this.nsuHost,
     );

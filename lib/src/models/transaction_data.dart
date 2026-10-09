@@ -30,6 +30,16 @@ class TransactionData {
   /// ID da sessão (sessionId) - opcional
   final String? sessionId;
 
+  /// Quantidade de parcelas do crédito parcelado loja.
+  ///
+  /// `null` mantém o fluxo à vista. Quando informado, o fluxo automático escolhe
+  /// "Parcelado Loja" no menu de forma de pagamento e responde o número de
+  /// parcelas (campo 505). Não é enviado ao AgenteCliSiTef como parâmetro.
+  final int? installments;
+
+  /// Menor quantidade que caracteriza parcelamento (1x é à vista).
+  static const int minimumInstallments = 2;
+
   const TransactionData({
     required this.functionId,
     required this.trnAmount,
@@ -40,6 +50,7 @@ class TransactionData {
     this.trnAdditionalParameters = const {},
     this.trnInitParameters = const {},
     this.sessionId,
+    this.installments,
   });
 
   /// Construtor para transação de pagamento
@@ -53,6 +64,7 @@ class TransactionData {
     Map<String, String>? trnAdditionalParameters,
     Map<String, String>? trnInitParameters,
     String? sessionId,
+    int? installments,
   }) {
     return TransactionData(
       functionId: functionId,
@@ -64,6 +76,7 @@ class TransactionData {
       trnAdditionalParameters: trnAdditionalParameters ?? {},
       trnInitParameters: trnInitParameters ?? {},
       sessionId: sessionId,
+      installments: installments,
     );
   }
 
@@ -181,6 +194,11 @@ class TransactionData {
       errors.add('cashierOperator deve ter no máximo ${CliSiTefConstants.MAX_OPERATOR_LENGTH} caracteres');
     }
 
+    // Validar parcelas
+    if (installments != null && installments! < minimumInstallments) {
+      errors.add('installments deve ser no mínimo $minimumInstallments (1x é à vista)');
+    }
+
     // Validar sessionId
     if (sessionId != null && sessionId!.isNotEmpty) {
       if (sessionId!.length > CliSiTefConstants.MAX_SESSION_ID_LENGTH) {
@@ -205,7 +223,8 @@ class TransactionData {
         'cashierOperator: $cashierOperator, '
         'trnAdditionalParameters: $trnAdditionalParametersString, '
         'trnInitParameters: $trnInitParametersString, '
-        'sessionId: $sessionId'
+        'sessionId: $sessionId, '
+        'installments: $installments'
         ')';
   }
 
@@ -219,7 +238,8 @@ class TransactionData {
         other.taxInvoiceDate == taxInvoiceDate &&
         other.taxInvoiceTime == taxInvoiceTime &&
         other.cashierOperator == cashierOperator &&
-        other.sessionId == sessionId;
+        other.sessionId == sessionId &&
+        other.installments == installments;
   }
 
   @override
@@ -232,6 +252,7 @@ class TransactionData {
       taxInvoiceTime,
       cashierOperator,
       sessionId,
+      installments,
     );
   }
 
@@ -245,6 +266,7 @@ class TransactionData {
     Map<String, String>? trnAdditionalParameters,
     Map<String, String>? trnInitParameters,
     String? sessionId,
+    int? installments,
   }) {
     return TransactionData(
       functionId: functionId ?? this.functionId,
@@ -256,6 +278,7 @@ class TransactionData {
       trnAdditionalParameters: trnAdditionalParameters ?? this.trnAdditionalParameters,
       trnInitParameters: trnInitParameters ?? this.trnInitParameters,
       sessionId: sessionId ?? this.sessionId,
+      installments: installments ?? this.installments,
     );
   }
 }

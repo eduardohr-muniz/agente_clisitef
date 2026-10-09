@@ -1,11 +1,14 @@
 import 'package:talker/talker.dart';
 
+import '../../core/constants/clisitef_constants.dart';
+
 import '../../core/services/message_manager.dart';
 import '../../core/utils/format_utils.dart';
 import '../../models/transaction_data.dart';
 import '../../models/transaction_response.dart';
 import '../../models/clisitef_response.dart';
 import '../../repositories/clisitef_repository.dart';
+import 'parcelado_loja_interacao.dart';
 
 /// Use case para iniciar transações CliSiTef
 /// Pode ser usado tanto pelo serviço normal quanto pelo pendente
@@ -50,7 +53,8 @@ class StartTransactionUseCase {
       }
 
       // Processar fluxo iterativo
-      final iterativeResult = await _processIterativeFlow(startResponse, stopBeforeFinish, cliSiTefFields);
+      final parceladoLoja = data.installments == null ? null : ParceladoLojaInteracao(data.installments!);
+      final iterativeResult = await _processIterativeFlow(startResponse, stopBeforeFinish, cliSiTefFields, parceladoLoja);
 
       return iterativeResult;
     } catch (e) {
@@ -70,6 +74,7 @@ class StartTransactionUseCase {
     TransactionResponse initialResponse,
     bool stopBeforeFinish,
     CliSiTefResponse cliSiTefFields,
+    ParceladoLojaInteracao? parceladoLoja,
   ) async {
     try {
       TransactionResponse currentResponse = initialResponse;
@@ -92,7 +97,19 @@ class StartTransactionUseCase {
         _preencherCampos(cliSiTefFields, currentResponse);
 
         // Processar comando específico
-        final commandResult = await _processCommand(currentResponse);
+        final String? commandResult;
+        try {
+          commandResult = _responderParceladoLoja(parceladoLoja, currentResponse) ?? await _processCommand(currentResponse);
+        } on ParceladoLojaIndisponivelException catch (erro) {
+          _talker?.error(erro.message);
+          await _repository.continueTransaction(
+            sessionId: sessionId,
+            command: currentResponse.command ?? 0,
+            continueCode: _abortarFluxo,
+            data: '',
+          );
+          return StartTransactionResult.error(_erroParceladoLoja(erro.message), clisitefFields: cliSiTefFields);
+        }
 
         currentResponse = await _repository.continueTransaction(
           sessionId: sessionId,
@@ -108,6 +125,14 @@ class StartTransactionUseCase {
 
       // Preencher campos da resposta final
       _preencherCampos(cliSiTefFields, currentResponse);
+
+      // Parcelado loja: só segue se a transação realmente saiu parcelada
+      final motivoParaDesfazer = parceladoLoja?.motivoParaDesfazer(cliSiTefFields);
+      if (motivoParaDesfazer != null) {
+        _talker?.error(motivoParaDesfazer);
+        await _desfazerTransacao(sessionId);
+        return StartTransactionResult.error(_erroParceladoLoja(motivoParaDesfazer), clisitefFields: cliSiTefFields);
+      }
 
       // Se deve parar antes da finalização (transação pendente)
       if (stopBeforeFinish) {
@@ -135,6 +160,36 @@ class StartTransactionUseCase {
         clisitefFields: cliSiTefFields,
       );
     }
+  }
+
+  /// Valor de `continue` que interrompe o fluxo iterativo do CliSiTef.
+  static const int _abortarFluxo = -1;
+
+  /// Comandos de coleta de campo em que o CliSiTef pergunta o número de parcelas.
+  static const Set<int> _comandosColetaCampo = {29, 30};
+
+  /// Resposta do crédito parcelado loja, ou `null` para seguir o comportamento padrão.
+  String? _responderParceladoLoja(ParceladoLojaInteracao? parceladoLoja, TransactionResponse response) {
+    if (parceladoLoja == null) return null;
+    if (response.command == 21) return parceladoLoja.responderMenu(response.buffer ?? '');
+    if (_comandosColetaCampo.contains(response.command)) return parceladoLoja.responderCampo(response.fieldType);
+    return null;
+  }
+
+  Future<void> _desfazerTransacao(String sessionId) async {
+    try {
+      await _repository.finishTransaction(sessionId: sessionId, confirm: false);
+    } catch (erro) {
+      _talker?.error('Falha ao desfazer transação parcelada: $erro');
+    }
+  }
+
+  TransactionResponse _erroParceladoLoja(String mensagem) {
+    return TransactionResponse(
+      serviceStatus: CliSiTefConstants.SERVICE_STATUS_ERROR,
+      serviceMessage: mensagem,
+      clisitefStatus: CliSiTefConstants.TRANSACTION_INTERNAL_ERROR,
+    );
   }
 
   /// Verifica se a resposta indica um erro baseado nos códigos
